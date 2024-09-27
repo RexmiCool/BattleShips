@@ -5,6 +5,7 @@ namespace BattleShip.Models
 {
     public class Game
     {
+        private int id;
         private int size;
         private Dictionary<char, int> battleShips;
         private Grid playerGrid;
@@ -154,6 +155,14 @@ namespace BattleShip.Models
             }
 
             return BoatLocations;
+        }
+
+        public int getId(){
+            return this.id;
+        }
+
+        public void setId(int id){
+            this.id = id;
         }
 
     }
