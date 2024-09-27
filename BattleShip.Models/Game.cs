@@ -1,7 +1,4 @@
-﻿using System.Data.Common;
-using System.Reflection.Metadata.Ecma335;
-
-namespace BattleShip.Models
+﻿namespace BattleShip.Models
 {
     public class Game
     {
@@ -130,29 +127,28 @@ namespace BattleShip.Models
             List<List<List<int>>> BoatLocations = new List<List<List<int>>>();
             
             // Initialisation des sous-listes pour chaque bateau
-            for (int k = 0; k < 6; k++)
+            for (int k = 0; k < this.battleShips.Count; k++)
             {
                 BoatLocations.Add(new List<List<int>>());
             }
             
             int[,] grid = this.playerGrid.GetGrid();
 
-            for (int i = 0; i < this.size; i++)
+            for (int row = 0; row < this.size; row++)
             {
-                for (int j = 0; j < this.size; j++)
+                for (int col = 0; col < this.size; col++)
                 {
-                    if (grid[i, j] != '\0') // Si la cellule contient un bateau
+                    if (!isCellEmpty(row, col))
                     {
-                        int index = grid[i, j] - 'A'; // Convertir en index (0 pour 'A', 1 pour 'B', etc.)
+                        int index = grid[row, col] - 'A'; // Convertir en index ('A'-'A' = 0, 'B'-'A' = 1, etc.)
                         
                         if (index >= 0 && index < BoatLocations.Count)
                         {
-                            BoatLocations[index].Add(new List<int> { i, j });
+                            BoatLocations[index].Add(new List<int> { row, col });
                         }
                     }
                 }
             }
-
             return BoatLocations;
         }
 
