@@ -5,12 +5,7 @@ class Program
 
     static void Main(string[] args)
     {
-        Grid grid = new Grid(10, 10);
-        grid.DisplayGrid();
-
-        grid.UpdateCell(2, 2, 1);
-        Console.WriteLine("Grille après mise à jour :");
-        grid.DisplayGrid();
+        Game game = new Game();
     }
 }
 

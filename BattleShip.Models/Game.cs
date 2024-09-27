@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BattleShip.Models
+﻿namespace BattleShip.Models
 {
-    internal class Game
+    public class Game
     {
         private int size;
         private Dictionary<char, int> battleShips;
@@ -20,7 +14,10 @@ namespace BattleShip.Models
             this.playerGrid = new Grid(size, size);
             this.botGrid = new Grid(size, size);
 
+            this.playerGrid.DisplayGrid();
+            Console.WriteLine("-------------------");
             deployBattleShips();
+            this.playerGrid.DisplayGrid();
         }
 
         public Game(int size, Dictionary<char, int> battleShips)
@@ -30,7 +27,10 @@ namespace BattleShip.Models
             this.playerGrid = new Grid(size, size);
             this.botGrid= new Grid(size, size);
 
+            this.playerGrid.DisplayGrid();
+            Console.WriteLine("-------------------");
             deployBattleShips();
+            this.playerGrid.DisplayGrid();
         }
 
         public void deployBattleShips()
@@ -41,6 +41,8 @@ namespace BattleShip.Models
                 int row = 0;
                 bool isFree = false;
                 bool isBoatPlaceFree = false;
+                int orientation_1 = 0;
+                int orientation_2 = 0;
 
                 while (!isBoatPlaceFree)
                 {
@@ -52,8 +54,8 @@ namespace BattleShip.Models
                         isFree = isCellEmpty(row, column);
                     }
 
-                    int orientation_1 = Random.Shared.Next(2);
-                    int orientation_2 = random.Next(2) == 0 ? 1 : -1;
+                    orientation_1 = Random.Shared.Next(2);
+                    orientation_2 = Random.Shared.Next(2) == 0 ? 1 : -1;
                     int i = 0;
                     isBoatPlaceFree = true;
 
@@ -61,31 +63,32 @@ namespace BattleShip.Models
                     {
                         while (i < battleShip.Value && isBoatPlaceFree)
                         {
-                            isBoatPlaceFree = isFreisCellEmpty(row, column + (i * orientation_2));
+                            isBoatPlaceFree = isCellEmpty(row, column + (i * orientation_2));
                             i++;
                         }
+                    }
                     else
                     {
                         while (i < battleShip.Value && isBoatPlaceFree)
                         {
-                            isBoatPlaceFree = isFreisCellEmpty(row + (i * orientation_2), column);
+                            isBoatPlaceFree = isCellEmpty(row + (i * orientation_2), column);
                             i++;
                         }
                     }
                 }
 
                 if (orientation_1 == 0)
+                {
+                    for (int i = 0; i < battleShip.Value; i++)
                     {
-                        for (int i = 0; i < battleShip.Value; i++)
-                        {
-                            this.playerGrid.UpdateCell(row, column + (i * orientation_2), battleShip.Key)
+                        this.playerGrid.UpdateCell(row, column + (i * orientation_2), battleShip.Key);
                         }
-                    else
+                }
+                else
+                {
+                    for (int i = 0; i < battleShip.Value; i++)
                     {
-                        for (int i = 0; i < battleShip.Value; i++)
-                        {
-                            this.playerGrid.UpdateCell(row + (i * orientation_2), column, battleShip.Key)
-                        }
+                        this.playerGrid.UpdateCell(row + (i * orientation_2), column, battleShip.Key);
                     }
                 }
             }
