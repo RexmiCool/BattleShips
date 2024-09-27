@@ -1,4 +1,7 @@
-﻿namespace BattleShip.Models
+﻿using System.Data.Common;
+using System.Reflection.Metadata.Ecma335;
+
+namespace BattleShip.Models
 {
     public class Game
     {
@@ -16,7 +19,7 @@
 
             this.playerGrid.DisplayGrid();
             Console.WriteLine("-------------------");
-            deployBattleShips();
+            deployBattleShips(this.playerGrid);
             this.playerGrid.DisplayGrid();
         }
 
@@ -29,78 +32,75 @@
 
             this.playerGrid.DisplayGrid();
             Console.WriteLine("-------------------");
-            deployBattleShips();
+            deployBattleShips(this.playerGrid);
             this.playerGrid.DisplayGrid();
         }
 
-        public void deployBattleShips()
+        public void deployBattleShips(Grid grid)
         {
             foreach (var battleShip in battleShips)
             {
-                int column = 0;
-                int row = 0;
-                bool isFree = false;
-                bool isBoatPlaceFree = false;
-                int orientation_1 = 0;
-                int orientation_2 = 0;
+                int battleshipRow = 0, battleshipCol = 0, direction = 0;
+                bool isFirstPositionValid = false, isBattleshipDeployable = false, isHorizontal = false;
 
-                while (!isBoatPlaceFree)
+                while (!isBattleshipDeployable)
                 {
-                    while (!isFree)
+                    while (!isFirstPositionValid)
                     {
-                        column = Random.Shared.Next(this.size);
-                        row = Random.Shared.Next(this.size);
+                        battleshipRow = Random.Shared.Next(this.size);
+                        battleshipCol = Random.Shared.Next(this.size);
 
-                        isFree = isCellEmpty(row, column);
+                        isFirstPositionValid = isCellEmpty(battleshipRow, battleshipCol);
                     }
 
-                    orientation_1 = Random.Shared.Next(2);
-                    orientation_2 = Random.Shared.Next(2) == 0 ? 1 : -1;
-                    int i = 0;
-                    isBoatPlaceFree = true;
+                    isHorizontal = Random.Shared.Next(2) == 1;
+                    direction = Random.Shared.Next(2) == 0 ? 1 : -1;
 
-                    if (orientation_1 == 0)
+                    isBattleshipDeployable = isBattleshipPositionValid(battleShip.Value, battleshipRow, battleshipCol, isHorizontal, direction);                    
+                }
+
+                for (int i = 0; i < battleShip.Value; i++)
+                {
+                    if (isHorizontal)
                     {
-                        while (i < battleShip.Value && isBoatPlaceFree)
-                        {
-                            isBoatPlaceFree = isCellEmpty(row, column + (i * orientation_2));
-                            i++;
-                        }
+                        battleshipCol += direction;
                     }
                     else
                     {
-                        while (i < battleShip.Value && isBoatPlaceFree)
-                        {
-                            isBoatPlaceFree = isCellEmpty(row + (i * orientation_2), column);
-                            i++;
-                        }
+                        battleshipRow += direction;
                     }
-                }
-
-                if (orientation_1 == 0)
-                {
-                    for (int i = 0; i < battleShip.Value; i++)
-                    {
-                        this.playerGrid.UpdateCell(row, column + (i * orientation_2), battleShip.Key);
-                        }
-                }
-                else
-                {
-                    for (int i = 0; i < battleShip.Value; i++)
-                    {
-                        this.playerGrid.UpdateCell(row + (i * orientation_2), column, battleShip.Key);
-                    }
+                    grid.UpdateCell(battleshipRow, battleshipCol, battleShip.Key);
                 }
             }
         }
 
-        public bool isCellEmpty(int row, int column)
+        private bool isCellEmpty(int row, int column)
         {
             if (row >= 0 && row < this.size && column >= 0 && column < this.size)
             {
                 return this.playerGrid.GetCell(row, column) == '\0';
             }
             return false;
+        }
+
+        private bool isBattleshipPositionValid(int battleshipSize, int battleshipRow, int battleshipCol, bool isHorizontal, int direction)
+        {
+            for (int i = 0; i < battleshipSize; i++)
+            {
+                if (isHorizontal)
+                {
+                    battleshipCol += direction;
+                } else
+                {
+                    battleshipRow += direction;
+                }
+
+                if (!isCellEmpty(battleshipRow, battleshipCol))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
