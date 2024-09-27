@@ -1,3 +1,20 @@
+using BattleShip.Models;
+
+class Program
+{
+
+    static void Main(string[] args)
+    {
+        Grid grid = new Grid(10, 10);
+        grid.DisplayGrid();
+
+        grid.UpdateCell(2, 2, 1);
+        Console.WriteLine("Grille après mise à jour :");
+        grid.DisplayGrid();
+    }
+}
+
+/*
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -42,3 +59,4 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
+*/
