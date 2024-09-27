@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BattleShip.Models;
 
 
@@ -42,7 +43,69 @@ app.MapGet("/game/new", () =>
 .WithName("GetNewGame")
 .WithOpenApi();
 
+app.MapPost("/game/attack", async (HttpContext httpContext) =>
+{
+    // Lire le corps de la requête
+    var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
+    var request = JsonSerializer.Deserialize<AttackRequest>(requestBody);
+
+    // Vérifier si le modèle est valide
+    if (request == null)
+    {
+        return Results.BadRequest("Invalid request body");
+    }
+
+    int gameId = request.GameId;
+    int row = request.Row;
+    int column = request.Column;
+
+    // Vérifier si le jeu existe
+    if (!games.ContainsKey(gameId))
+    {
+        return Results.NotFound($"Game with ID {gameId} not found");
+    }
+
+    // Récupérer le jeu
+    Game game = games[gameId];
+
+    // Effectuer l'attaque du joueur
+    int playerAttack = game.AttackPlayer(row, column);
+
+    // Vérifier si le joueur a gagné
+    int? winner = game.CheckForWinner();
+    if (winner != null)
+    {
+        return Results.Ok(new AttackResponse(winner, playerAttack, 0, (-1, -1)));
+    }
+
+    // Faire attaquer l'IA
+    (int botRow, int botColumn) = game.BotAttack();
+    int botAttack = game.AttackBot(botRow, botColumn);
+
+    // Vérifier si l'IA a gagné
+    winner = game.CheckForWinner();
+
+    // Retourner l'état de l'attaque et du jeu
+    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, (botRow, botColumn)));
+})
+.WithName("MakeAttack")
+.WithOpenApi();
+
+
 app.Run();
 
 record GameResponse(int GameId, List<List<List<int>>> BoatLocations);
 
+record AttackResponse(
+    int? Winner,          // L'identité du gagnant (null si personne n'a encore gagné)
+    int PlayerAttack,      // Résultat de l'attaque du joueur ("Touché" ou "Raté")
+    int BotAttack,         // Résultat de l'attaque de l'IA ("Touché" ou "Raté")
+    (int Row, int Column) BotAttackCoordinates  // Coordonnées de l'attaque de l'IA
+);
+record AttackRequest(int GameId, int Row, int Column);
+
+// {
+//   "gameId": 1,
+//   "row": 3,
+//   "column": 4
+// }

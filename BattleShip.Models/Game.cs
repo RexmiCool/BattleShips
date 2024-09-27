@@ -161,5 +161,73 @@
             this.id = id;
         }
 
+        // Attaque du joueur sur la grille de l'IA
+        public int AttackPlayer(int row, int column)
+        {
+            if (botGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+            {
+                botGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
+                return 1;
+            }
+            else
+            {
+                botGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
+                return 0;
+            }
+        }
+
+        // Attaque de l'IA sur la grille du joueur
+        public (int row, int column) BotAttack()
+        {
+            int row = Random.Shared.Next(size);
+            int column = Random.Shared.Next(size);
+            return (row, column);
+        }
+
+        // Traiter l'attaque de l'IA
+        public int AttackBot(int row, int column)
+        {
+            if (playerGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+            {
+                playerGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
+                return 1;
+            }
+            else
+            {
+                playerGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
+                return 0;
+            }
+        }
+
+        // Vérifier s'il y a un gagnant
+        public int? CheckForWinner()
+        {
+            if (IsAllShipsSunk(botGrid))
+            {
+                return 1;
+            }
+            if (IsAllShipsSunk(playerGrid))
+            {
+                return 2;
+            }
+            return null;
+        }
+
+        // Méthode pour vérifier si tous les bateaux sont coulés sur une grille
+        private bool IsAllShipsSunk(Grid grid)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    if (grid.GetCell(i, j) != '\0' && grid.GetCell(i, j) != 'X')
+                    {
+                        return false; // Il reste encore des bateaux non coulés
+                    }
+                }
+            }
+            return true; // Tous les bateaux sont coulés
+        }
+
     }
 }
