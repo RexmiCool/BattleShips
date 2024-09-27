@@ -62,4 +62,9 @@ public class Grid
             return -1;
         }
     }
+
+    public int[,] GetGrid()
+    {
+        return grid;
+    }
 }

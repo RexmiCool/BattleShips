@@ -102,5 +102,59 @@ namespace BattleShip.Models
             }
             return true;
         }
+
+        public int[,] getPlayerGrid()
+        {
+            return this.playerGrid.GetGrid();
+        }
+        /*public List<List<int>> getPlayerGrid()
+        {
+            int[,] gridArray = this.playerGrid.GetGrid();
+            List<List<int>> gridList = new List<List<int>>();
+            
+            for (int i = 0; i < gridArray.GetLength(0); i++)
+            {
+                List<int> row = new List<int>();
+                for (int j = 0; j < gridArray.GetLength(1); j++)
+                {
+                    row.Add(gridArray[i, j]);
+                }
+                gridList.Add(row);
+            }
+            
+            return gridList;
+        }*/
+        
+        public List<List<List<int>>> getPlayerBoatLocation()
+        {
+            List<List<List<int>>> BoatLocations = new List<List<List<int>>>();
+            
+            // Initialisation des sous-listes pour chaque bateau
+            for (int k = 0; k < 6; k++)
+            {
+                BoatLocations.Add(new List<List<int>>());
+            }
+            
+            int[,] grid = this.playerGrid.GetGrid();
+
+            for (int i = 0; i < this.size; i++)
+            {
+                for (int j = 0; j < this.size; j++)
+                {
+                    if (grid[i, j] != '\0') // Si la cellule contient un bateau
+                    {
+                        int index = grid[i, j] - 'A'; // Convertir en index (0 pour 'A', 1 pour 'B', etc.)
+                        
+                        if (index >= 0 && index < BoatLocations.Count)
+                        {
+                            BoatLocations[index].Add(new List<int> { i, j });
+                        }
+                    }
+                }
+            }
+
+            return BoatLocations;
+        }
+
     }
 }
