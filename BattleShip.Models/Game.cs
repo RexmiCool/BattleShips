@@ -15,10 +15,8 @@
             this.playerGrid = new Grid(size, size);
             this.botGrid = new Grid(size, size);
 
-            this.playerGrid.DisplayGrid();
-            Console.WriteLine("-------------------");
             deployBattleShips(this.playerGrid);
-            this.playerGrid.DisplayGrid();
+            deployBattleShips(this.botGrid);
         }
 
         public Game(int size, Dictionary<char, int> battleShips)
@@ -164,15 +162,22 @@
         // Attaque du joueur sur la grille de l'IA
         public int AttackPlayer(int row, int column)
         {
-            if (botGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+            if (botGrid.GetCell(row, column) == 'X' || botGrid.GetCell(row, column) == 'O') // Si coup deja tiré ici
             {
-                botGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
-                return 1;
+                return 0;
             }
             else
-            {
-                botGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
-                return 0;
+            { 
+                if (botGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+                {
+                    botGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
+                    return 1;
+                }
+                else
+                {
+                    botGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
+                    return 0;
+                }
             }
         }
 
@@ -187,15 +192,22 @@
         // Traiter l'attaque de l'IA
         public int AttackBot(int row, int column)
         {
-            if (playerGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O') // Si coup deja tiré ici
             {
-                playerGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
-                return 1;
+                return 0;
             }
             else
-            {
-                playerGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
-                return 0;
+            { 
+                if (playerGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+                {
+                    playerGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
+                    return 1;
+                }
+                else
+                {
+                    playerGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
+                    return 0;
+                }
             }
         }
 
@@ -220,7 +232,7 @@
             {
                 for (int j = 0; j < size; j++)
                 {
-                    if (grid.GetCell(i, j) != '\0' && grid.GetCell(i, j) != 'X')
+                    if (grid.GetCell(i, j) != '\0' && grid.GetCell(i, j) != 'O' && grid.GetCell(i, j) != 'X')
                     {
                         return false; // Il reste encore des bateaux non coulés
                     }

@@ -59,6 +59,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
     int row = request.Row;
     int column = request.Column;
 
+
     // Vérifier si le jeu existe
     if (!games.ContainsKey(gameId))
     {
@@ -67,15 +68,15 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
 
     // Récupérer le jeu
     Game game = games[gameId];
-
+    
     // Effectuer l'attaque du joueur
     int playerAttack = game.AttackPlayer(row, column);
-
+    
     // Vérifier si le joueur a gagné
     int? winner = game.CheckForWinner();
     if (winner != null)
     {
-        return Results.Ok(new AttackResponse(winner, playerAttack, 0, (-1, -1)));
+        return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1)));
     }
 
     // Faire attaquer l'IA
@@ -86,7 +87,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
     winner = game.CheckForWinner();
 
     // Retourner l'état de l'attaque et du jeu
-    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, (botRow, botColumn)));
+    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn)));
 })
 .WithName("MakeAttack")
 .WithOpenApi();
@@ -96,11 +97,13 @@ app.Run();
 
 record GameResponse(int GameId, List<List<List<int>>> BoatLocations);
 
+record BotAttackCoordinates(int Row, int Column);
+
 record AttackResponse(
     int? Winner,          // L'identité du gagnant (null si personne n'a encore gagné)
     int PlayerAttack,      // Résultat de l'attaque du joueur ("Touché" ou "Raté")
     int BotAttack,         // Résultat de l'attaque de l'IA ("Touché" ou "Raté")
-    (int Row, int Column) BotAttackCoordinates  // Coordonnées de l'attaque de l'IA
+    BotAttackCoordinates BotAttackCoordinates  // Coordonnées de l'attaque de l'IA
 );
 record AttackRequest(int GameId, int Row, int Column);
 
