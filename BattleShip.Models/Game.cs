@@ -4,32 +4,52 @@
     {
         private int id;
         private int size;
+        private int difficulty;
         private Dictionary<char, int> battleShips;
         private Grid playerGrid;
         private Grid botGrid;
+        private List<(int, int)> botAttacks;
+        private List<Move> history;
+        private ProbabilityMap botProbabilityMap;
+        private PerimeterAttack perimeterAttack;
 
-        public Game()
+
+        public Game(int difficulty = 2)
         {
             this.size = 10;
+            this.difficulty = difficulty;
             this.battleShips = new Dictionary<char, int>() { { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 } };
             this.playerGrid = new Grid(size, size);
             this.botGrid = new Grid(size, size);
+            this.botAttacks = new List<(int, int)>();
+            this.history = new List<Move>();
+            this.botProbabilityMap = new ProbabilityMap(size, battleShips);
+            this.perimeterAttack = new PerimeterAttack(size);
 
             deployBattleShips(this.playerGrid);
             deployBattleShips(this.botGrid);
         }
 
-        public Game(int size, Dictionary<char, int> battleShips)
+        public Game(int size, int difficulty, Dictionary<char, int> battleShips)
         {
             this.size = size;
+            this.difficulty = difficulty;
             this.battleShips = battleShips;
             this.playerGrid = new Grid(size, size);
             this.botGrid= new Grid(size, size);
-
+            this.botAttacks = new List<(int, int)>();
+            this.history = new List<Move>();
+            this.botProbabilityMap = new ProbabilityMap(size, battleShips);
+            this.perimeterAttack = new PerimeterAttack(size);
+            
             this.playerGrid.DisplayGrid();
             Console.WriteLine("-------------------");
             deployBattleShips(this.playerGrid);
             this.playerGrid.DisplayGrid();
+        }
+
+        public int getDifficulty(){
+            return this.difficulty;
         }
 
         public void deployBattleShips(Grid grid)
@@ -103,23 +123,6 @@
         {
             return this.playerGrid.GetGrid();
         }
-        /*public List<List<int>> getPlayerGrid()
-        {
-            int[,] gridArray = this.playerGrid.GetGrid();
-            List<List<int>> gridList = new List<List<int>>();
-            
-            for (int i = 0; i < gridArray.GetLength(0); i++)
-            {
-                List<int> row = new List<int>();
-                for (int j = 0; j < gridArray.GetLength(1); j++)
-                {
-                    row.Add(gridArray[i, j]);
-                }
-                gridList.Add(row);
-            }
-            
-            return gridList;
-        }*/
         
         public List<List<List<int>>> getPlayerBoatLocation()
         {
@@ -159,55 +162,204 @@
             this.id = id;
         }
 
-        // Attaque du joueur sur la grille de l'IA
-        public int AttackPlayer(int row, int column)
-        {
-            if (botGrid.GetCell(row, column) == 'X' || botGrid.GetCell(row, column) == 'O') // Si coup deja tiré ici
-            {
-                return 0;
-            }
-            else
-            { 
-                if (botGrid.GetCell(row, column) != '\0') // Si un bateau est présent
-                {
-                    botGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
-                    return 1;
-                }
-                else
-                {
-                    botGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
-                    return 0;
-                }
-            }
-        }
-
         // Attaque de l'IA sur la grille du joueur
-        public (int row, int column) BotAttack()
+        public (int row, int column) EasyBotAttack()
         {
-            int row = Random.Shared.Next(size);
-            int column = Random.Shared.Next(size);
+            int row, column;
+
+            // Générer des coordonnées jusqu'à trouver une position non attaquée
+            do
+            {
+                row = Random.Shared.Next(size);
+                column = Random.Shared.Next(size);
+            }
+            while (botAttacks.Contains((row, column))); // Vérifier si le coup a déjà été joué
+
+            // Ajouter les coordonnées à la liste des attaques effectuées
+            botAttacks.Add((row, column));
+
             return (row, column);
         }
 
-        // Traiter l'attaque de l'IA
-        public int AttackBot(int row, int column)
+        // Attaque du bot et enregistrement dans l'historique
+        public int EasyAttackBot(int row, int column)
         {
-            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O') // Si coup deja tiré ici
+            bool hit = false;
+
+            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
+            {
+                return 0;
+            }
+            else
+            {
+                if (playerGrid.GetCell(row, column) != '\0')
+                {
+                    playerGrid.UpdateCell(row, column, 'X');
+                    hit = true;
+                }
+                else
+                {
+                    playerGrid.UpdateCell(row, column, 'O');
+                }
+
+                // Enregistrer le coup du bot dans l'historique
+                history.Add(new Move("Bot", row, column, hit));
+                return hit ? 1 : 0;
+            }
+        }
+
+        // Attaque de l'IA basée sur l'attaque par périmètre
+        public (int row, int column) MediumBotAttack()
+        {
+            // Utiliser l'attaque par périmètre pour déterminer la prochaine attaque
+            var (row, column) = this.perimeterAttack.GetNextAttack();
+            
+            // Ajouter les coordonnées à la liste des attaques effectuées
+            botAttacks.Add((row, column));
+
+            return (row, column);
+        }
+
+        // Mise à jour de la carte des tirs après chaque attaque du bot
+        public int MediumAttackBot(int row, int column)
+        {
+            bool hit = false;
+
+            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
+            {
+                return 0;
+            }
+            else
+            {
+                if (playerGrid.GetCell(row, column) != '\0')
+                {
+                    playerGrid.UpdateCell(row, column, 'X');
+                    hit = true;
+                }
+                else
+                {
+                    playerGrid.UpdateCell(row, column, 'O');
+                }
+
+                // Enregistrer le coup du bot dans l'historique
+                history.Add(new Move("Bot", row, column, hit));
+
+                // Mise à jour de la carte des tirs dans l'attaque par périmètre
+                this.perimeterAttack.UpdateShotMap(row, column, hit);
+
+                return hit ? 1 : 0;
+            }
+        }
+
+
+
+
+        // Attaque de l'IA basée sur la carte des probabilités
+        public (int row, int column) HardBotAttack()
+        {
+            // Utiliser la carte des probabilités pour trouver la prochaine attaque intelligente
+            var (row, column) = this.botProbabilityMap.GetNextAttack();
+            
+            // Ajouter les coordonnées à la liste des attaques effectuées
+            botAttacks.Add((row, column));
+
+            return (row, column);
+        }
+
+        // Mise à jour de la carte des probabilités après chaque attaque du joueur
+        public int HardAttackBot(int row, int column)
+        {
+            bool hit = false;
+
+            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
+            {
+                return 0;
+            }
+            else
+            {
+                if (playerGrid.GetCell(row, column) != '\0')
+                {
+                    playerGrid.UpdateCell(row, column, 'X');
+                    hit = true;
+                }
+                else
+                {
+                    playerGrid.UpdateCell(row, column, 'O');
+                }
+
+                // Enregistrer le coup du bot dans l'historique
+                history.Add(new Move("Bot", row, column, hit));
+
+                // Mise à jour de la carte des probabilités
+                this.botProbabilityMap.UpdateShotMap(row, column, hit);
+
+                return hit ? 1 : 0;
+            }
+        }
+
+        // Attaque du joueur et enregistrement dans l'historique
+        public int AttackPlayer(int row, int column)
+        {
+            bool hit = false;
+
+            if (botGrid.GetCell(row, column) == 'X' || botGrid.GetCell(row, column) == 'O')
             {
                 return 0;
             }
             else
             { 
-                if (playerGrid.GetCell(row, column) != '\0') // Si un bateau est présent
+                if (botGrid.GetCell(row, column) != '\0')
                 {
-                    playerGrid.UpdateCell(row, column, 'X'); // Marquer comme touché
-                    return 1;
+                    botGrid.UpdateCell(row, column, 'X');
+                    hit = true;
                 }
                 else
                 {
-                    playerGrid.UpdateCell(row, column, 'O'); // Marquer comme raté
-                    return 0;
+                    botGrid.UpdateCell(row, column, 'O');
                 }
+
+                // Enregistrer le coup dans l'historique
+                history.Add(new Move("Player", row, column, hit));
+                return hit ? 1 : 0;
+            }
+        }
+
+        // Afficher l'historique des coups joués
+        public List<Move> GetHistory()
+        {
+            return history;
+        }
+
+        // Revenir en arrière d'un nombre de coups
+        public void Undo(int moves)
+        {
+            if (moves <= 0 || moves > history.Count)
+            {
+                Console.WriteLine("Invalid number of moves to undo.");
+                return;
+            }
+
+            for (int i = 0; i < moves; i++)
+            {
+                // Supprimer le dernier coup de l'historique
+                Move lastMove = history.Last();
+                history.RemoveAt(history.Count - 1);
+
+                // Restaurer l'état des grilles en fonction de l'historique supprimé
+                if (lastMove.Player == "Player")
+                {
+                    // Réinitialiser la case
+                    botGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du bot
+                    this.botProbabilityMap.RestoreShotMap(lastMove.Row, lastMove.Column, lastMove.Hit); // Restaurer la carte des probabilités
+                }
+                else if (lastMove.Player == "Bot")
+                {
+                    // Réinitialiser la case
+                    playerGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du joueur
+                    this.botProbabilityMap.RestoreShotMap(lastMove.Row, lastMove.Column, lastMove.Hit); // Restaurer la carte des probabilités
+                }
+
+                Console.WriteLine($"Undo {lastMove.Player}'s move at ({lastMove.Row}, {lastMove.Column})");
             }
         }
 
