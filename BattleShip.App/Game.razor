@@ -1,0 +1,184 @@
+﻿@page "/game"
+@inject HttpClient Http
+@inject GameState GameState
+
+<h3>BattleShip Game</h3>
+
+@if (!gameStarted)
+{
+    <button @onclick="StartNewGame">Start a New Game</button>
+}
+else
+{
+    <div class="game-container">
+        <div class="grid-container">
+            <h4>Grille du Joueur</h4>
+            @if (GameState != null)
+            {
+                <table>
+                    @for (int i = 0; i < 10; i++)  // Exemple pour une grille de 10x10
+                    {
+                        <tr>
+                            @for (int j = 0; j < 10; j++)
+                            {
+                                <td>
+                                    @if (GameState.OpponentGrid[i, j] == true)  // Case touchée
+                                    {
+                                        <img src="images/hit.png" alt="Hit" />
+                                    }
+                                    else if (GameState.OpponentGrid[i, j] == false)  // Case ratée
+                                    {
+                                        <img src="images/miss.png" alt="Miss" />
+                                    }
+                                    else
+                                    {
+                                        <button @onclick="() => PlayMove(i, j)">?</button>
+                                        // Case non jouée
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </table>
+            }
+        </div>
+
+        <div class="grid-container">
+            <h4>Grille de l'Adversaire</h4>
+            <table>
+                @for (int row = 0; row < GameState.OpponentGrid.GetLength(0); row++)
+                {
+                    <tr>
+                        @for (int col = 0; col < GameState.OpponentGrid.GetLength(1); col++)
+                        {
+                            <td>
+                                @if (GameState.OpponentGrid[row, col] == true)
+                                {
+                                    <img src="hit.png" alt="Touché" />
+                                }
+                                else if (GameState.OpponentGrid[row, col] == false)
+                                {
+                                    <img src="miss.png" alt="Raté" />
+                                }
+                                else
+                                {
+                                    <span>~</span> <!-- Vide -->
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </table>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(GameState.Message))
+    {
+        <div class="alert alert-success">@GameState.Message</div>
+    }
+}
+
+@code {
+    private bool gameStarted = false;
+
+    // Méthode pour démarrer une nouvelle partie
+    private async Task StartNewGame()
+    {
+        // Appeler l'API pour créer une nouvelle partie
+        var response = await Http.GetFromJsonAsync<GameResponse>("game/new");
+
+        if (response != null)
+        {
+            // Mettre à jour l'état du jeu
+            gameStarted = true;
+
+            // Initialiser la grille du joueur avec les positions des bateaux reçues
+            for (int i = 0; i < response.BoatLocations.Count; i++)
+            {
+                var boat = response.BoatLocations[i];
+                foreach (var part in boat)
+                {
+                    int row = part[0];
+                    int col = part[1];
+                    GameState.PlayerGrid[row, col] = (char)('A' + i); // Utiliser 'A', 'B', etc. pour les bateaux
+                }
+            }
+
+            // Initialiser la grille de l'adversaire (vide au début)
+            for (int row = 0; row < GameState.OpponentGrid.GetLength(0); row++)
+            {
+                for (int col = 0; col < GameState.OpponentGrid.GetLength(1); col++)
+                {
+                    GameState.OpponentGrid[row, col] = null;
+                }
+            }
+        }
+    }
+
+    // Classe pour représenter la réponse de l'API
+    private class GameResponse
+    {
+        public int GameId { get; set; }
+        public List<List<List<int>>> BoatLocations { get; set; }
+    }
+
+    [Inject] private HttpClient httpClient { get; set; }
+
+    private async Task PlayMove(int id, int x, int y)
+    {
+        // Créer un objet pour représenter le coup
+        var attack = new {ID = id, X = x, Y = y };
+
+        // Appeler l'API pour jouer le coup
+        var response = await httpClient.PostAsJsonAsync("/game/attack", attack);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<MoveResult>();
+
+            // Si le jeu est terminé, afficher le résultat
+            if (result.GameOver)
+            {
+                if (result.Winner == "Player")
+                {
+                    // Afficher que vous avez gagné
+                    // Par exemple, mettre à jour une variable qui sera affichée dans le composant
+                    GameState.Message = "Vous avez gagné !";
+                }
+                else if (result.Winner == "AI")
+                {
+                    GameState.Message = "Vous avez perdu...";
+                }
+            }
+
+            // Mettre à jour la grille de l'adversaire
+            GameState.OpponentGrid[x, y] = result.PlayerHit;
+
+            // Si l'IA a joué, mettre à jour la grille du joueur
+            if (result.AIMove != null)
+            {
+                GameState.PlayerGrid[result.AIMove.X, result.AIMove.Y] = result.AIHit ? 'X' : 'O';  // X pour touché, O pour raté
+            }
+        }
+        else
+        {
+            // Gérer les erreurs d'API
+            GameState.Message = "Erreur lors de la requête à l'API.";
+        }
+    }
+
+    public class MoveResult
+    {
+        public bool GameOver { get; set; }
+        public string Winner { get; set; }  // "Player" ou "AI"
+        public bool PlayerHit { get; set; }  // Si le joueur a touché un bateau
+        public Attack AIMove { get; set; }  // Coordonnées du coup de l'IA
+        public bool AIHit { get; set; }  // Si l'IA a touché un bateau
+    }
+
+    public class Attack
+    {
+        public int ID { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+}

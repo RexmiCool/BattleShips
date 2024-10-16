@@ -3,19 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BattleShip.App", "BattleShip.App\BattleShip.App.csproj", "{6AC509CD-3818-45A3-AEB9-97761FC877EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BattleShip.App", "BattleShip.App\BattleShip.App.csproj", "{6AC509CD-3818-45A3-AEB9-97761FC877EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BattleShip.API", "BattleShip.API\BattleShip.API.csproj", "{3E558841-BEB9-4D18-960A-1723FB9057DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BattleShip.API", "BattleShip.API\BattleShip.API.csproj", "{3E558841-BEB9-4D18-960A-1723FB9057DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BattleShip.Models", "BattleShip.Models\BattleShip.Models.csproj", "{36C16AF2-E495-4161-9578-2D8E1BB4EC7C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BattleShip.Models", "BattleShip.Models\BattleShip.Models.csproj", "{36C16AF2-E495-4161-9578-2D8E1BB4EC7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{6AC509CD-3818-45A3-AEB9-97761FC877EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -30,5 +27,8 @@ Global
 		{36C16AF2-E495-4161-9578-2D8E1BB4EC7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36C16AF2-E495-4161-9578-2D8E1BB4EC7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36C16AF2-E495-4161-9578-2D8E1BB4EC7C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

@@ -1,11 +1,23 @@
-using Microsoft.AspNetCore.Components.Web;
+using BattleShip.Models;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using BattleShip.App;
+using System.Net.Http;
+using System.Threading.Tasks;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
+namespace BattleShip.App
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.RootComponents.Add<App>("#app");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+            // Configurez l'adresse de base de l'API
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5205") });
 
-await builder.Build().RunAsync();
+            builder.Services.AddSingleton<GameState>();
+
+            await builder.Build().RunAsync();
+        }
+    }
+}

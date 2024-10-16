@@ -4,12 +4,26 @@ using BattleShip.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        });
+});
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseCors("AllowAllOrigins");
+app.UseHttpsRedirection();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -21,27 +35,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 Dictionary<int, Game> games = new Dictionary<int, Game>();
-
-
-// app.MapGet("/game/new", () =>
-// {
-//     // Créer un nouvel objet Game
-//     Game game = new Game();
-    
-//     // Attribuer un ID au jeu (par exemple, le nombre de jeux existants)
-//     int gameId = games.Count;
-//     game.setId(gameId);
-    
-//     // Ajouter le jeu à la collection des jeux
-//     games.Add(gameId, game);
-
-//     // Utiliser un record pour retourner la réponse
-//     var response = new GameResponse(gameId, game.getPlayerBoatLocation());
-
-//     return response;
-// })
-// .WithName("GetNewGame")
-// .WithOpenApi();
 
 // Endpoint pour créer une partie
 app.MapPost("/game/new", async (HttpContext httpContext) =>
@@ -81,30 +74,6 @@ app.MapPost("/game/new", async (HttpContext httpContext) =>
 })
 .WithName("CreateNewGame")
 .WithOpenApi();
-
-// app.MapGet("/game/restart/{gameId}", (int gameId) =>
-// {
-//     if (!games.ContainsKey(gameId))
-//     {
-//         return Results.NotFound($"Game with ID {gameId} not found");
-//     }
-    
-//     // Créer un nouvel objet Game
-//     Game game = new Game();
-    
-//     // Attribuer un ID au jeu
-//     game.setId(gameId);
-    
-//     // Remplacer l'ancien jeu par le nouveau dans la collection
-//     games[gameId] = game;
-
-//     // Utiliser un record pour retourner la réponse
-//     var response = new GameResponse(gameId, game.getPlayerBoatLocation());
-
-//     return Results.Ok(response);
-// })
-// .WithName("GetRestartedGame")
-// .WithOpenApi();
 
 // Endpoint pour redémarrer une partie
 app.MapPost("/game/restart", async (HttpContext httpContext) =>
