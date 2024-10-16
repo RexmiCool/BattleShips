@@ -4,10 +4,11 @@ namespace BattleShip.Models {
     public record BotAttackCoordinates(int row, int column);
 
     public record AttackResponse(
-        int? winner,          // (null si personne n'a encore gagné)
-        int playerAttack,      // Résultat de l'attaque du joueur ("Touché" ou "Raté")
-        int botAttack,         // Résultat de l'attaque de l'IA ("Touché" ou "Raté")
+        int? winner,          // (null si personne n'a encore gagnï¿½)
+        int playerAttack,      // Rï¿½sultat de l'attaque du joueur ("Touchï¿½" ou "Ratï¿½")
+        int botAttack,         // Rï¿½sultat de l'attaque de l'IA ("Touchï¿½" ou "Ratï¿½")
         BotAttackCoordinates botAttackCoordinates,
-        Dictionary<string, Dictionary<char, int>> destroyedBoatsCount
+        Dictionary<string, Dictionary<char, int>> destroyedBoatsCount, 
+        Dictionary<string, int> scoreBoard
     );
 }

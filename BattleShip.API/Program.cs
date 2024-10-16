@@ -131,9 +131,12 @@ app.MapPost("/game/restart", async (HttpContext httpContext) =>
     {
         playerBoatPositions = null;
     }
+
+    int playerScore = games[gameId].getScore("Player");
+    int botScore = games[gameId].getScore("Bot");
     
     // Créer un nouvel objet Game
-    Game game = new Game(difficulty, gridSize, null, playerBoatPositions);
+    Game game = new Game(difficulty, gridSize, null, playerBoatPositions, playerScore, botScore);
 
     // Attribuer un ID au jeu
     game.setId(gameId);
@@ -174,7 +177,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
     int? winner = game.CheckForWinner();
     if (winner != null)
     {
-        return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1), game.GetDestructionCounts()));
+        return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1), game.GetDestructionCounts(), game.getScoreBoard()));
     }
 
     // Faire attaquer l'IA
@@ -198,7 +201,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
     winner = game.CheckForWinner();
 
     // Retourner l'état de l'attaque et du jeu
-    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn), game.GetDestructionCounts()));
+    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn), game.GetDestructionCounts(), game.getScoreBoard()));
 })
 .WithName("MakeAttack")
 .WithOpenApi();

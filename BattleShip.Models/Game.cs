@@ -13,9 +13,10 @@
         private ProbabilityMap botProbabilityMap;
         private PerimeterAttack perimeterAttack;
         private Dictionary<string, Dictionary<char, int>> destructionCounts;
+        private Dictionary<string, int> scoreBoard;
 
 
-        public Game(int difficulty = 2, int size = 10, Dictionary<char, int> battleShips = null, Dictionary<char, List<List<int>>>? playerBoatPositions = null)
+        public Game(int difficulty = 2, int size = 10, Dictionary<char, int> battleShips = null, Dictionary<char, List<List<int>>>? playerBoatPositions = null, int playerScore = 0, int botScore = 0)
         {
             this.size = size;
             this.difficulty = difficulty;
@@ -38,6 +39,12 @@
             {
                 { "Player", new Dictionary<char, int>() },
                 { "Bot", new Dictionary<char, int>() }
+            };
+
+            this.scoreBoard = new Dictionary<string, int>
+            {
+                { "Player", playerScore },
+                { "Bot", botScore }
             };
 
             foreach (var ship in this.battleShips.Keys)
@@ -101,6 +108,14 @@
 
         public int getDifficulty(){
             return this.difficulty;
+        }
+
+        public int getScore(string player){
+            return this.scoreBoard[player];
+        }
+        
+        public Dictionary<string, int> getScoreBoard(){
+            return this.scoreBoard;
         }
 
         public int getSize(){
@@ -480,10 +495,12 @@
         {
             if (IsAllShipsSunk(botGrid))
             {
+                this.scoreBoard["Player"]++;
                 return 1;
             }
             if (IsAllShipsSunk(playerGrid))
-            {
+            {                
+                this.scoreBoard["Bot"]++;
                 return 2;
             }
             return null;
