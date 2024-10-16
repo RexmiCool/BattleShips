@@ -4,26 +4,12 @@ using BattleShip.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAllOrigins",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
-        });
-});
-
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-app.UseCors("AllowAllOrigins");
-app.UseHttpsRedirection();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -39,7 +25,6 @@ Dictionary<int, Game> games = new Dictionary<int, Game>();
 // Endpoint pour créer une partie
 app.MapPost("/game/new", async (HttpContext httpContext) =>
 {
-
     // Lire le corps de la requête
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
@@ -194,7 +179,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
     int? winner = game.CheckForWinner();
     if (winner != null)
     {
-        return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1)));
+        return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1), game.GetDestructionCounts()));
     }
 
     // Faire attaquer l'IA
@@ -220,7 +205,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
     winner = game.CheckForWinner();
 
     // Retourner l'état de l'attaque et du jeu
-    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn)));
+    return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn), game.GetDestructionCounts()));
 })
 .WithName("MakeAttack")
 .WithOpenApi();
@@ -317,7 +302,8 @@ record AttackResponse(
     int? Winner,          // L'identité du gagnant (null si personne n'a encore gagné)
     int PlayerAttack,      // Résultat de l'attaque du joueur ("Touché" ou "Raté")
     int BotAttack,         // Résultat de l'attaque de l'IA ("Touché" ou "Raté")
-    BotAttackCoordinates BotAttackCoordinates  // Coordonnées de l'attaque de l'IA
+    BotAttackCoordinates BotAttackCoordinates,  // Coordonnées de l'attaque de l'IA
+    Dictionary<string, Dictionary<char, int>>DestroyedBoatsCount 
 );
 record AttackRequest(int GameId, int Row, int Column);
 

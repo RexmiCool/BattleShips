@@ -12,6 +12,7 @@
         private List<Move> history;
         private ProbabilityMap botProbabilityMap;
         private PerimeterAttack perimeterAttack;
+        private Dictionary<string, Dictionary<char, int>> destructionCounts;
 
 
         public Game(int difficulty = 2, int size = 10, Dictionary<char, int> battleShips = null, Dictionary<char, List<List<int>>>? playerBoatPositions = null)
@@ -31,6 +32,18 @@
             else
             {
                 this.battleShips = new Dictionary<char, int>() { { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 } };
+            }
+
+            destructionCounts = new Dictionary<string, Dictionary<char, int>>
+            {
+                { "Player", new Dictionary<char, int>() },
+                { "Bot", new Dictionary<char, int>() }
+            };
+
+            foreach (var ship in this.battleShips.Keys)
+            {
+                destructionCounts["Player"][ship] = 0;
+                destructionCounts["Bot"][ship] = 0;
             }
 
             if (playerBoatPositions != null)
@@ -230,6 +243,7 @@
         public int EasyAttackBot(int row, int column)
         {
             bool hit = false;
+            char shipType = '\0';
 
             if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
             {
@@ -239,6 +253,7 @@
             {
                 if (playerGrid.GetCell(row, column) != '\0')
                 {
+                    shipType = (char)playerGrid.GetCell(row, column);
                     playerGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
@@ -249,8 +264,30 @@
 
                 // Enregistrer le coup du bot dans l'historique
                 history.Add(new Move("Bot", row, column, hit));
+
+                if (hit && IsShipSunk(playerGrid, shipType))
+                {
+                    destructionCounts["Bot"][shipType]++;
+                }
+
                 return hit ? 1 : 0;
             }
+        }
+
+        // Méthode pour vérifier si un navire est complètement détruit
+        private bool IsShipSunk(Grid grid, char shipType)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    if (grid.GetCell(i, j) == shipType)
+                    {
+                        return false; // Le navire n'est pas encore complètement détruit
+                    }
+                }
+            }
+            return true; // Le navire est complètement détruit
         }
 
         // Attaque de l'IA basée sur l'attaque par périmètre
@@ -269,6 +306,7 @@
         public int MediumAttackBot(int row, int column)
         {
             bool hit = false;
+            char shipType = '\0';
 
             if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
             {
@@ -278,6 +316,7 @@
             {
                 if (playerGrid.GetCell(row, column) != '\0')
                 {
+                    shipType = (char)playerGrid.GetCell(row, column);
                     playerGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
@@ -288,6 +327,11 @@
 
                 // Enregistrer le coup du bot dans l'historique
                 history.Add(new Move("Bot", row, column, hit));
+
+                if (hit && IsShipSunk(playerGrid, shipType))
+                {
+                    destructionCounts["Bot"][shipType]++;
+                }
 
                 // Mise à jour de la carte des tirs dans l'attaque par périmètre
                 this.perimeterAttack.UpdateShotMap(row, column, hit);
@@ -315,6 +359,7 @@
         public int HardAttackBot(int row, int column)
         {
             bool hit = false;
+            char shipType = '\0';
 
             if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
             {
@@ -324,6 +369,7 @@
             {
                 if (playerGrid.GetCell(row, column) != '\0')
                 {
+                    shipType = (char)playerGrid.GetCell(row, column);
                     playerGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
@@ -334,6 +380,11 @@
 
                 // Enregistrer le coup du bot dans l'historique
                 history.Add(new Move("Bot", row, column, hit));
+
+                if (hit && IsShipSunk(playerGrid, shipType))
+                {
+                    destructionCounts["Bot"][shipType]++;
+                }
 
                 // Mise à jour de la carte des probabilités
                 this.botProbabilityMap.UpdateShotMap(row, column, hit);
@@ -346,6 +397,7 @@
         public int AttackPlayer(int row, int column)
         {
             bool hit = false;
+            char shipType = '\0';
 
             if (botGrid.GetCell(row, column) == 'X' || botGrid.GetCell(row, column) == 'O')
             {
@@ -355,6 +407,7 @@
             { 
                 if (botGrid.GetCell(row, column) != '\0')
                 {
+                    shipType = (char)botGrid.GetCell(row, column);
                     botGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
@@ -365,8 +418,20 @@
 
                 // Enregistrer le coup dans l'historique
                 history.Add(new Move("Player", row, column, hit));
+
+                if (hit && IsShipSunk(botGrid, shipType))
+                {
+                    destructionCounts["Player"][shipType]++;
+                }
+
                 return hit ? 1 : 0;
             }
+        }
+
+        // Obtenir le tableau de bord
+        public Dictionary<string, Dictionary<char, int>> GetDestructionCounts()
+        {
+            return destructionCounts;
         }
 
         // Afficher l'historique des coups joués
