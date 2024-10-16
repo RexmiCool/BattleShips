@@ -360,7 +360,7 @@
 
             if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
             {
-                Console.WriteLine("LALALLA");
+                Console.WriteLine("BOT tape sur une case ou il a deja tape ==>BUG");
                 return 0;
             }
             else
