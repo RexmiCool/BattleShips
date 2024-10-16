@@ -1,7 +1,13 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using BattleShip.Models;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IValidator<RestartGameRequest>, RestartGameRequestValidator>();
+builder.Services.AddScoped<IValidator<AttackRequest>, AttackRequestValidator>();
+builder.Services.AddScoped<IValidator<UndoRequest>, UndoRequestValidator>();
 
 builder.Services.AddCors(options =>
 {
@@ -34,13 +40,20 @@ app.UseHttpsRedirection();
 Dictionary<int, Game> games = new Dictionary<int, Game>();
 
 // Endpoint pour créer une partie
-app.MapPost("/game/new", async (HttpContext httpContext) =>
+app.MapPost("/game/new", async (HttpContext httpContext, IValidator <RestartGameRequest> validator) =>
 {
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
+
     if (request == null)
     {
         return Results.BadRequest("Invalid request body");
+    }
+
+    var validationResult = await validator.ValidateAsync(request);
+    if (!validationResult.IsValid)
+    {
+        return Results.BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
     }
 
     int difficulty = request.difficulty;
@@ -89,13 +102,20 @@ app.MapPost("/game/new", async (HttpContext httpContext) =>
 .WithOpenApi();
 
 // Endpoint pour redémarrer une partie
-app.MapPost("/game/restart", async (HttpContext httpContext) =>
+app.MapPost("/game/restart", async (HttpContext httpContext, IValidator<RestartGameRequest> validator) =>
 {
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
+
     if (request == null)
     {
         return Results.BadRequest("Invalid request body");
+    }
+
+    var validationResult = await validator.ValidateAsync(request);
+    if (!validationResult.IsValid)
+    {
+        return Results.BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
     }
 
     int gameId = request.gameId;
@@ -150,13 +170,20 @@ app.MapPost("/game/restart", async (HttpContext httpContext) =>
 .WithOpenApi();
 
 
-app.MapPost("/game/attack", async (HttpContext httpContext) =>
+app.MapPost("/game/attack", async (HttpContext httpContext, IValidator<AttackRequest> validator) =>
 {
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<AttackRequest>(requestBody);
+
     if (request == null)
     {
         return Results.BadRequest("Invalid request body");
+    }
+
+    var validationResult = await validator.ValidateAsync(request);
+    if (!validationResult.IsValid)
+    {
+        return Results.BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
     }
 
     int gameId = request.gameId;
@@ -217,7 +244,7 @@ app.MapGet("/game/history", (int gameId) =>
 .WithName("GetHistory")
 .WithOpenApi();
 
-app.MapPost("/game/undo", async (HttpContext httpContext) =>
+app.MapPost("/game/undo", async (HttpContext httpContext, IValidator<UndoRequest> validator) =>
 {
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<UndoRequest>(requestBody);
@@ -225,6 +252,12 @@ app.MapPost("/game/undo", async (HttpContext httpContext) =>
     if (request == null || request.moves <= 0)
     {
         return Results.BadRequest("Invalid request body");
+    }
+
+    var validationResult = await validator.ValidateAsync(request);
+    if (!validationResult.IsValid)
+    {
+        return Results.BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
     }
 
     if (!games.ContainsKey(request.gameId))
