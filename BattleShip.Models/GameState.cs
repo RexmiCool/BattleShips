@@ -14,11 +14,10 @@
 
         public int GameId { get; set; }
 
+        public int GridSize { get; private set; }  // Taille de la grille choisie
+
         public GameState()
         {
-            int size = 10;  // taille par défaut de la grille, 10x10
-            PlayerGrid = new char[size, size];
-            OpponentGrid = new bool?[size, size];
             Message = "";
             GameId = 0;
         }
@@ -36,14 +35,20 @@
             }
         }
 
-        // Méthode pour réinitialiser l'état du jeu (utile pour démarrer une nouvelle partie)
-        public void ResetGame()
+        // Méthode pour définir la taille de la grille
+        public void Initialize(int gridSize)
         {
-            int size = PlayerGrid.GetLength(0);
-            PlayerGrid = new char[size, size];
-            OpponentGrid = new bool?[size, size];
+            GridSize = gridSize;
+            PlayerGrid = new char[GridSize, GridSize];
+            OpponentGrid = new bool?[GridSize, GridSize];
             Message = "";
             GameId = 0;
+        }
+
+        // Méthode pour réinitialiser l'état du jeu selon la nouvelle taille
+        public void ResetGame(int gridSize)
+        {
+            Initialize(gridSize);  // Réutiliser la méthode d'initialisation
         }
 
         // Méthode pour afficher les grilles (pour le debug)
