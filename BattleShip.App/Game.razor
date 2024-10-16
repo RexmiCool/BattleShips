@@ -29,6 +29,7 @@
 }
 else
 {
+    <button @onclick="RestartGame">Redémarrer la partie</button>
     <div class="game-container">
         <div class="grid-container">
             <h4>Grille du Joueur</h4>
@@ -181,4 +182,62 @@ else
             GameState.Message = "Erreur lors de la requête à l'API.";
         }
     }
+
+    private async Task RestartGame()
+    {
+        var request = new RestartGameRequest
+            {
+                gameId = GameState.GameId,
+                difficulty = selectedDifficulty,
+                gridSize = selectedGridSize
+            };
+
+        var response = await Http.PostAsJsonAsync("game/restart", request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var gameResponse = await response.Content.ReadFromJsonAsync<GameResponse>();
+
+            if (gameResponse != null)
+            {
+                GameState.GameId = gameResponse.gameId;
+
+                // Réinitialiser la grille du joueur
+                for (int row = 0; row < GameState.PlayerGrid.GetLength(0); row++)
+                {
+                    for (int col = 0; col < GameState.PlayerGrid.GetLength(1); col++)
+                    {
+                        GameState.PlayerGrid[row, col] = ' '; // Remettre à l'état vide, par exemple un espace
+                    }
+                }
+
+                // Réinitialiser la grille de l'adversaire
+                for (int row = 0; row < GameState.OpponentGrid.GetLength(0); row++)
+                {
+                    for (int col = 0; col < GameState.OpponentGrid.GetLength(1); col++)
+                    {
+                        GameState.OpponentGrid[row, col] = null; // Remettre à null
+                    }
+                }
+
+                // Initialiser la grille du joueur avec les nouveaux bateaux
+                foreach (var boat in gameResponse.boatLocations)
+                {
+                    foreach (var part in boat.Value)
+                    {
+                        int row = part[0];
+                        int col = part[1];
+                        GameState.PlayerGrid[row, col] = boat.Key;  // Utilise le caractère du bateau
+                    }
+                }
+
+                GameState.Message = "Partie redémarrée avec succès.";
+            }
+        }
+        else
+        {
+            GameState.Message = "Erreur lors du redémarrage de la partie.";
+        }
+    }
+
 }
