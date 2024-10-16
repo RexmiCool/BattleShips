@@ -93,7 +93,7 @@ namespace BattleShip.Models
                 {
                     if (probMap[row, col] == maxProbability)
                     {
-                        // Marquer cet endroit comme attaqué dans le shotMap
+                        // Marquer cette case comme attaquée dans le shotMap
                         shotMap[row, col] = 1;
                         return (row, col);
                     }
@@ -103,17 +103,74 @@ namespace BattleShip.Models
             return (0, 0);
         }
 
+
         // Met à jour la carte des tirs en fonction des coups réussis/ratés
         public void UpdateShotMap(int row, int col, bool hit)
         {
-            shotMap[row, col] = hit ? 1 : -1;
+            if (hit)
+            {
+                // Si c'est un hit, on augmente les probabilités des cases adjacentes
+                IncreaseAdjacentProbabilities(row, col);
+            }
+            else
+            {
+                // Si c'est un miss, marquer la case comme ratée
+                shotMap[row, col] = -1;
+            }
+
+            // Mettre à jour la carte des probabilités après chaque tir
             UpdateProbabilityMap();
         }
+
+        private void IncreaseAdjacentProbabilities(int row, int col)
+        {
+            shotMap[row, col] = 1; // Marquer la case comme "touchée"
+            
+            // Vérifier et augmenter la probabilité des cases adjacentes
+            if (row > 0 && shotMap[row - 1, col] == 0) // Haut
+                probMap[row - 1, col] += 5;
+            if (row < size - 1 && shotMap[row + 1, col] == 0) // Bas
+                probMap[row + 1, col] += 5;
+            if (col > 0 && shotMap[row, col - 1] == 0) // Gauche
+                probMap[row, col - 1] += 5;
+            if (col < size - 1 && shotMap[row, col + 1] == 0) // Droite
+                probMap[row, col + 1] += 5;
+        }
+
+
 
         public void RestoreShotMap(int row, int col, bool hit)
         {
             shotMap[row, col] = hit ? 1 : 0;
             UpdateProbabilityMap(); // Recalculer la carte des probabilités après restauration
+        }
+        
+        public void displayProbMap(){
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine("ProbMap");
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    Console.Write(this.probMap[i, j] + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine("-----------------------------------------");
+        }
+
+        public void displayShotMap(){
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine("ShotMap");
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    Console.Write(this.shotMap[i, j] + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine("-----------------------------------------");
         }
     }
 }
