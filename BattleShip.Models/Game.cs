@@ -124,41 +124,57 @@
 
         public void deployBattleShips(Grid grid)
         {
-            foreach (var battleShip in battleShips)
+            foreach (var battleShip in this.battleShips)
             {
-                int battleshipRow = 0, battleshipCol = 0, direction = 0;
-                bool isFirstPositionValid = false, isBattleshipDeployable = false, isHorizontal = false;
+                int battleshipRow = 0, battleshipCol = 0;
+                bool isBattleshipDeployable = false;
+                bool isHorizontal;
+
+                isHorizontal = Random.Shared.Next(2) == 1;
 
                 while (!isBattleshipDeployable)
                 {
-                    while (!isFirstPositionValid)
-                    {
-                        battleshipRow = Random.Shared.Next(this.size);
-                        battleshipCol = Random.Shared.Next(this.size);
+                    // Choisir une position aléatoire pour le bateau
+                    battleshipRow = Random.Shared.Next(this.size);
+                    battleshipCol = Random.Shared.Next(this.size);
+                    isHorizontal = Random.Shared.Next(2) == 1; // True pour horizontal, False pour vertical
 
-                        isFirstPositionValid = isCellEmpty(battleshipRow, battleshipCol);
-                    }
-
-                    isHorizontal = Random.Shared.Next(2) == 1;
-                    direction = Random.Shared.Next(2) == 0 ? 1 : -1;
-
-                    isBattleshipDeployable = isBattleshipPositionValid(battleShip.Value, battleshipRow, battleshipCol, isHorizontal, direction);                    
+                    // Vérifier si la position est valide pour le déploiement
+                    isBattleshipDeployable = IsBattleshipPositionValid(battleShip.Value, battleshipRow, battleshipCol, isHorizontal, grid);
                 }
 
+                // Déployer le bateau
                 for (int i = 0; i < battleShip.Value; i++)
                 {
                     if (isHorizontal)
                     {
-                        battleshipCol += direction;
+                        grid.UpdateCell(battleshipRow, battleshipCol + i, battleShip.Key); // Placer le bateau horizontalement
                     }
                     else
                     {
-                        battleshipRow += direction;
+                        grid.UpdateCell(battleshipRow + i, battleshipCol, battleShip.Key); // Placer le bateau verticalement
                     }
-                    grid.UpdateCell(battleshipRow, battleshipCol, battleShip.Key);
                 }
             }
         }
+
+        // Vérifie si la position du bateau est valide (ne chevauche pas d'autres bateaux et reste dans les limites de la grille)
+        private bool IsBattleshipPositionValid(int shipSize, int startRow, int startCol, bool isHorizontal, Grid grid)
+        {
+            for (int i = 0; i < shipSize; i++)
+            {
+                int row = isHorizontal ? startRow : startRow + i;
+                int col = isHorizontal ? startCol + i : startCol;
+
+                // Vérifier les limites de la grille
+                if (row < 0 || row >= size || col < 0 || col >= size || !(grid.GetCell(row, col)=='\0'))
+                {
+                    return false; // Position non valide si hors limites ou si la cellule n'est pas vide
+                }
+            }
+            return true; // La position est valide
+        }
+
 
         private bool isCellEmpty(int row, int column)
         {
