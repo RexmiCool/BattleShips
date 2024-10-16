@@ -340,9 +340,6 @@
             }
         }
 
-
-
-
         // Attaque de l'IA basée sur la carte des probabilités
         public (int row, int column) HardBotAttack()
         {
@@ -363,6 +360,7 @@
 
             if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
             {
+                Console.WriteLine("LALALLA");
                 return 0;
             }
             else
@@ -388,6 +386,10 @@
 
                 // Mise à jour de la carte des probabilités
                 this.botProbabilityMap.UpdateShotMap(row, column, hit);
+
+                Console.WriteLine("==========================================================================================");
+                this.botProbabilityMap.displayProbMap();
+                this.botProbabilityMap.displayShotMap();
 
                 return hit ? 1 : 0;
             }

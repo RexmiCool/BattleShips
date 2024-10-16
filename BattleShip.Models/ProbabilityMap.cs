@@ -22,27 +22,37 @@ namespace BattleShip.Models
         // Génère ou met à jour la carte des probabilités en fonction des coups précédents
         public void UpdateProbabilityMap()
         {
-            // Réinitialiser la carte des probabilités
-            Array.Clear(probMap, 0, probMap.Length);
+            // Réinitialiser les cellules qui n'ont pas été touchées ou manquées
+            for (int row = 0; row < size; row++)
+            {
+                for (int col = 0; col < size; col++)
+                {
+                    if (shotMap[row, col] == 0)  // Si la cellule n'a pas été touchée ou manquée
+                    {
+                        probMap[row, col] = 0;  // Réinitialiser la probabilité
+                    }
+                    // Ne réinitialise pas les cases avec un bateau touché
+                }
+            }
 
-            // Pour chaque taille de bateau
+            // Calculer les probabilités pour les bateaux restants
             foreach (var ship in shipSizes.Values)
             {
-                int useSize = ship - 1; // Taille effective du bateau pour les vérifications
-                // Parcourir toute la grille
+                int useSize = ship - 1;  // Taille effective du bateau pour les vérifications
                 for (int row = 0; row < size; row++)
                 {
                     for (int col = 0; col < size; col++)
                     {
-                        if (shotMap[row, col] != 1) // Vérifier que cet endroit n'a pas encore été touché
+                        if (shotMap[row, col] == 0) // Ne considérer que les cases non touchées
                         {
-                            // Calculer les positions où un bateau pourrait encore se trouver
                             AddShipEndpoints(row, col, useSize);
                         }
+                        // Ne réinitialise pas les cases où un bateau a été touché (shotMap[row, col] == 1)
                     }
                 }
             }
         }
+
 
         // Fonction auxiliaire pour ajouter les "endpoints" du bateau
         private void AddShipEndpoints(int row, int col, int shipSize)
@@ -83,6 +93,20 @@ namespace BattleShip.Models
             }
         }
 
+        private void IncrementAdjacentProbabilities(int row, int col)
+        {
+            // Vérifier les 4 directions adjacentes (haut, bas, gauche, droite)
+            if (row - 1 >= 0 && shotMap[row - 1, col] == 0)
+                probMap[row - 1, col] += 5;  // Augmenter les probabilités de manière significative
+            if (row + 1 < size && shotMap[row + 1, col] == 0)
+                probMap[row + 1, col] += 5;
+            if (col - 1 >= 0 && shotMap[row, col - 1] == 0)
+                probMap[row, col - 1] += 5;
+            if (col + 1 < size && shotMap[row, col + 1] == 0)
+                probMap[row, col + 1] += 5;
+        }
+
+
         // Récupérer la prochaine attaque intelligente basée sur la carte des probabilités
         public (int row, int col) GetNextAttack()
         {
@@ -106,14 +130,58 @@ namespace BattleShip.Models
         // Met à jour la carte des tirs en fonction des coups réussis/ratés
         public void UpdateShotMap(int row, int col, bool hit)
         {
-            shotMap[row, col] = hit ? 1 : -1;
+            if (hit)
+            {
+                // Marquer la cellule comme touchée
+                shotMap[row, col] = 1;
+
+                // Ne pas effacer la probabilité des coups réussis
+                // mais plutôt augmenter celle des cases adjacentes
+                IncrementAdjacentProbabilities(row, col);
+            }
+            else
+            {
+                // Marquer la cellule comme manquée
+                shotMap[row, col] = -1;
+            }
+
+            // Mettre à jour la carte des probabilités, mais garder en mémoire les coups réussis
             UpdateProbabilityMap();
         }
+
 
         public void RestoreShotMap(int row, int col, bool hit)
         {
             shotMap[row, col] = hit ? 1 : 0;
             UpdateProbabilityMap(); // Recalculer la carte des probabilités après restauration
+        }
+
+        public void displayProbMap(){
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine("ProbMap");
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    Console.Write(this.probMap[i, j] + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine("-----------------------------------------");
+        }
+
+        public void displayShotMap(){
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine("ShotMap");
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    Console.Write(this.shotMap[i, j] + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine("-----------------------------------------");
         }
     }
 }
