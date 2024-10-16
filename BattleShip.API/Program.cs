@@ -1,15 +1,26 @@
 using System.Text.Json;
 using BattleShip.Models;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseCors("AllowAllOrigins");
+app.UseHttpsRedirection();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -25,19 +36,16 @@ Dictionary<int, Game> games = new Dictionary<int, Game>();
 // Endpoint pour créer une partie
 app.MapPost("/game/new", async (HttpContext httpContext) =>
 {
-    // Lire le corps de la requête
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
-
-    // Vérifier si le modèle est valide
     if (request == null)
     {
         return Results.BadRequest("Invalid request body");
     }
 
-    int difficulty = request.Difficulty;
-    int gridSize = request.GridSize;
-    Dictionary<char, List<List<int>>> playerBoatPositions = request.PlayerBoatPositions;
+    int difficulty = request.difficulty;
+    int gridSize = request.gridSize;
+    Dictionary<char, List<List<int>>> playerBoatPositions = request.playerBoatPositions;
 
     // Vérifier la validité de la difficulté
     if (difficulty < 1 || difficulty > 3)
@@ -68,9 +76,8 @@ app.MapPost("/game/new", async (HttpContext httpContext) =>
      
     // Attribuer un ID au jeu (par exemple, le nombre de jeux existants)
     int gameId = games.Count;
-    game.setId(gameId);
     
-    // Ajouter le jeu à la collection des jeux
+    game.setId(gameId);
     games.Add(gameId, game);
 
     // Utiliser un record pour retourner la réponse
@@ -84,20 +91,17 @@ app.MapPost("/game/new", async (HttpContext httpContext) =>
 // Endpoint pour redémarrer une partie
 app.MapPost("/game/restart", async (HttpContext httpContext) =>
 {
-    // Lire le corps de la requête
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
-
-    // Vérifier si le modèle est valide
     if (request == null)
     {
         return Results.BadRequest("Invalid request body");
     }
 
-    int gameId = request.GameId;
-    int difficulty = request.Difficulty;
-    int gridSize = request.GridSize;
-    Dictionary<char, List<List<int>>> playerBoatPositions = request.PlayerBoatPositions;
+    int gameId = request.gameId;
+    int difficulty = request.difficulty;
+    int gridSize = request.gridSize;
+    Dictionary<char, List<List<int>>> playerBoatPositions = request.playerBoatPositions;
 
     // Vérifier la validité de la difficulté
     if (difficulty < 1 || difficulty > 3)
@@ -148,34 +152,25 @@ app.MapPost("/game/restart", async (HttpContext httpContext) =>
 
 app.MapPost("/game/attack", async (HttpContext httpContext) =>
 {
-    // Lire le corps de la requête
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<AttackRequest>(requestBody);
-
-    // Vérifier si le modèle est valide
     if (request == null)
     {
         return Results.BadRequest("Invalid request body");
     }
 
-    int gameId = request.GameId;
-    int row = request.Row;
-    int column = request.Column;
+    int gameId = request.gameId;
+    int row = request.row;
+    int column = request.column;
 
-
-    // Vérifier si le jeu existe
     if (!games.ContainsKey(gameId))
     {
         return Results.NotFound($"Game with ID {gameId} not found");
     }
 
-    // Récupérer le jeu
     Game game = games[gameId];
-    
-    // Effectuer l'attaque du joueur
     int playerAttack = game.AttackPlayer(row, column);
     
-    // Vérifier si le joueur a gagné
     int? winner = game.CheckForWinner();
     if (winner != null)
     {
@@ -200,8 +195,6 @@ app.MapPost("/game/attack", async (HttpContext httpContext) =>
         botAttack = game.MediumAttackBot(botRow, botColumn);
     }
     
-
-    // Vérifier si l'IA a gagné
     winner = game.CheckForWinner();
 
     // Retourner l'état de l'attaque et du jeu
@@ -229,18 +222,18 @@ app.MapPost("/game/undo", async (HttpContext httpContext) =>
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<UndoRequest>(requestBody);
 
-    if (request == null || request.Moves <= 0)
+    if (request == null || request.moves <= 0)
     {
         return Results.BadRequest("Invalid request body");
     }
 
-    if (!games.ContainsKey(request.GameId))
+    if (!games.ContainsKey(request.gameId))
     {
-        return Results.NotFound($"Game with ID {request.GameId} not found");
+        return Results.NotFound($"Game with ID {request.gameId} not found");
     }
 
-    Game game = games[request.GameId];
-    game.Undo(request.Moves);
+    Game game = games[request.gameId];
+    game.Undo(request.moves);
 
     return Results.Ok("Moves undone successfully.");
 })
@@ -289,28 +282,4 @@ bool ValidateBoatPositions(Dictionary<char, List<List<int>>> playerBoatPositions
     }
 
     return true;
-}
-
-
-record UndoRequest(int GameId, int Moves);
-
-record GameResponse(int GameId, int GridSize, Dictionary<char, List<List<int>>> BoatLocations);
-
-record BotAttackCoordinates(int Row, int Column);
-
-record AttackResponse(
-    int? Winner,          // L'identité du gagnant (null si personne n'a encore gagné)
-    int PlayerAttack,      // Résultat de l'attaque du joueur ("Touché" ou "Raté")
-    int BotAttack,         // Résultat de l'attaque de l'IA ("Touché" ou "Raté")
-    BotAttackCoordinates BotAttackCoordinates,  // Coordonnées de l'attaque de l'IA
-    Dictionary<string, Dictionary<char, int>>DestroyedBoatsCount 
-);
-record AttackRequest(int GameId, int Row, int Column);
-
-public class RestartGameRequest
-{
-    public int GameId { get; set; }
-    public int Difficulty { get; set; }
-    public int GridSize { get; set; }
-    public Dictionary<char, List<List<int>>> PlayerBoatPositions { get; set; }
 }
