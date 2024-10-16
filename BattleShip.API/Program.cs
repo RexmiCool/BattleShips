@@ -22,30 +22,10 @@ app.UseHttpsRedirection();
 
 Dictionary<int, Game> games = new Dictionary<int, Game>();
 
-
-// app.MapGet("/game/new", () =>
-// {
-//     // Créer un nouvel objet Game
-//     Game game = new Game();
-    
-//     // Attribuer un ID au jeu (par exemple, le nombre de jeux existants)
-//     int gameId = games.Count;
-//     game.setId(gameId);
-    
-//     // Ajouter le jeu à la collection des jeux
-//     games.Add(gameId, game);
-
-//     // Utiliser un record pour retourner la réponse
-//     var response = new GameResponse(gameId, game.getPlayerBoatLocation());
-
-//     return response;
-// })
-// .WithName("GetNewGame")
-// .WithOpenApi();
-
 // Endpoint pour créer une partie
 app.MapPost("/game/new", async (HttpContext httpContext) =>
 {
+
     // Lire le corps de la requête
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
@@ -57,15 +37,35 @@ app.MapPost("/game/new", async (HttpContext httpContext) =>
     }
 
     int difficulty = request.Difficulty;
+    int gridSize = request.GridSize;
+    Dictionary<char, List<List<int>>> playerBoatPositions = request.PlayerBoatPositions;
 
     // Vérifier la validité de la difficulté
     if (difficulty < 1 || difficulty > 3)
     {
         return Results.BadRequest("Invalid difficulty level. Must be 1 (easy), 2 (medium), or 3 (hard).");
     }
+
+    // Vérifier la validité de la taille de grille
+    if (gridSize != 8 && gridSize != 10 && gridSize != 12)
+    {
+        return Results.BadRequest("Invalid size for the grid. Must be 8 (easy), 10 (medium), or 12 (hard).");
+    }
     
+    if (playerBoatPositions != null)
+    {
+        if (!ValidateBoatPositions(playerBoatPositions, gridSize))
+        {
+            return Results.BadRequest("Invalid boat positions provided.");
+        }
+    }
+    else
+    {
+        playerBoatPositions = null;
+    }
+
     // Créer un nouvel objet Game
-    Game game = new Game(difficulty);
+    Game game = new Game(difficulty, gridSize, null, playerBoatPositions);
      
     // Attribuer un ID au jeu (par exemple, le nombre de jeux existants)
     int gameId = games.Count;
@@ -75,36 +75,12 @@ app.MapPost("/game/new", async (HttpContext httpContext) =>
     games.Add(gameId, game);
 
     // Utiliser un record pour retourner la réponse
-    var response = new GameResponse(gameId, game.getPlayerBoatLocation());
+    var response = new GameResponse(gameId, game.getSize(), game.getPlayerBoatLocation());
 
     return Results.Ok(response);
 })
 .WithName("CreateNewGame")
 .WithOpenApi();
-
-// app.MapGet("/game/restart/{gameId}", (int gameId) =>
-// {
-//     if (!games.ContainsKey(gameId))
-//     {
-//         return Results.NotFound($"Game with ID {gameId} not found");
-//     }
-    
-//     // Créer un nouvel objet Game
-//     Game game = new Game();
-    
-//     // Attribuer un ID au jeu
-//     game.setId(gameId);
-    
-//     // Remplacer l'ancien jeu par le nouveau dans la collection
-//     games[gameId] = game;
-
-//     // Utiliser un record pour retourner la réponse
-//     var response = new GameResponse(gameId, game.getPlayerBoatLocation());
-
-//     return Results.Ok(response);
-// })
-// .WithName("GetRestartedGame")
-// .WithOpenApi();
 
 // Endpoint pour redémarrer une partie
 app.MapPost("/game/restart", async (HttpContext httpContext) =>
@@ -121,21 +97,41 @@ app.MapPost("/game/restart", async (HttpContext httpContext) =>
 
     int gameId = request.GameId;
     int difficulty = request.Difficulty;
+    int gridSize = request.GridSize;
+    Dictionary<char, List<List<int>>> playerBoatPositions = request.PlayerBoatPositions;
 
     // Vérifier la validité de la difficulté
     if (difficulty < 1 || difficulty > 3)
     {
         return Results.BadRequest("Invalid difficulty level. Must be 1 (easy), 2 (medium), or 3 (hard).");
     }
+    
+    // Vérifier la validité de la taille de grille
+    if (gridSize != 8 && gridSize != 10 && gridSize != 12)
+    {
+        return Results.BadRequest("Invalid size for the grid. Must be 8 (easy), 10 (medium), or 12 (hard).");
+    }
 
     if (!games.ContainsKey(gameId))
     {
         return Results.NotFound($"Game with ID {gameId} not found");
     }
+
+    if (playerBoatPositions != null)
+    {
+        if (!ValidateBoatPositions(playerBoatPositions, gridSize))
+        {
+            return Results.BadRequest("Invalid boat positions provided.");
+        }
+    }
+    else
+    {
+        playerBoatPositions = null;
+    }
     
     // Créer un nouvel objet Game
-    Game game = new Game(difficulty);
-    
+    Game game = new Game(difficulty, gridSize, null, playerBoatPositions);
+
     // Attribuer un ID au jeu
     game.setId(gameId);
     
@@ -143,7 +139,7 @@ app.MapPost("/game/restart", async (HttpContext httpContext) =>
     games[gameId] = game;
 
     // Utiliser un record pour retourner la réponse
-    var response = new GameResponse(gameId, game.getPlayerBoatLocation());
+    var response = new GameResponse(gameId, game.getSize(), game.getPlayerBoatLocation());
 
     return Results.Ok(response);
 })
@@ -255,9 +251,51 @@ app.MapPost("/game/undo", async (HttpContext httpContext) =>
 
 app.Run();
 
+bool ValidateBoatPositions(Dictionary<char, List<List<int>>> playerBoatPositions, int gridSize)
+{
+    // Liste des tailles de bateaux correspondantes
+    Dictionary<char, int> boatSizes = new Dictionary<char, int>()
+    {
+        { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 }
+    };
+
+    foreach (var boat in playerBoatPositions)
+    {
+        char boatType = boat.Key;
+        List<List<int>> positions = boat.Value;
+
+        // Vérifier si le type de bateau existe
+        if (!boatSizes.ContainsKey(boatType))
+        {
+            return false; // Type de bateau invalide
+        }
+
+        // Vérifier que le nombre de positions correspond à la taille du bateau
+        if (positions.Count != boatSizes[boatType])
+        {
+            return false; // Taille de bateau incorrecte
+        }
+
+        // Vérifier que toutes les positions sont valides (dans les limites de la grille)
+        foreach (var pos in positions)
+        {
+            int row = pos[0];
+            int col = pos[1];
+
+            if (row < 0 || row >= gridSize || col < 0 || col >= gridSize)
+            {
+                return false; // Position en dehors des limites de la grille
+            }
+        }
+    }
+
+    return true;
+}
+
+
 record UndoRequest(int GameId, int Moves);
 
-record GameResponse(int GameId, List<List<List<int>>> BoatLocations);
+record GameResponse(int GameId, int GridSize, Dictionary<char, List<List<int>>> BoatLocations);
 
 record BotAttackCoordinates(int Row, int Column);
 
@@ -273,4 +311,6 @@ public class RestartGameRequest
 {
     public int GameId { get; set; }
     public int Difficulty { get; set; }
+    public int GridSize { get; set; }
+    public Dictionary<char, List<List<int>>> PlayerBoatPositions { get; set; }
 }

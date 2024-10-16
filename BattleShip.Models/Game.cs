@@ -14,42 +14,84 @@
         private PerimeterAttack perimeterAttack;
 
 
-        public Game(int difficulty = 2)
+        public Game(int difficulty = 2, int size = 10, Dictionary<char, int> battleShips = null, Dictionary<char, List<List<int>>>? playerBoatPositions = null)
         {
-            this.size = 10;
+            this.size = size;
             this.difficulty = difficulty;
-            this.battleShips = new Dictionary<char, int>() { { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 } };
             this.playerGrid = new Grid(size, size);
             this.botGrid = new Grid(size, size);
             this.botAttacks = new List<(int, int)>();
             this.history = new List<Move>();
-            this.botProbabilityMap = new ProbabilityMap(size, battleShips);
             this.perimeterAttack = new PerimeterAttack(size);
 
-            deployBattleShips(this.playerGrid);
+            if (battleShips != null)
+            {
+                this.battleShips = battleShips;
+            }
+            else
+            {
+                this.battleShips = new Dictionary<char, int>() { { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 } };
+            }
+
+            if (playerBoatPositions != null)
+            {
+                deployPlayerBattleShipsWithPositions(this.playerGrid, playerBoatPositions);
+            }
+            else
+            {
+                deployBattleShips(this.playerGrid);
+            }
+
             deployBattleShips(this.botGrid);
+
+            this.botProbabilityMap = new ProbabilityMap(size, this.battleShips);
+
         }
 
-        public Game(int size, int difficulty, Dictionary<char, int> battleShips)
+        private void deployPlayerBattleShipsWithPositions(Grid grid, Dictionary<char, List<List<int>>> playerBoatPositions)
         {
-            this.size = size;
-            this.difficulty = difficulty;
-            this.battleShips = battleShips;
-            this.playerGrid = new Grid(size, size);
-            this.botGrid= new Grid(size, size);
-            this.botAttacks = new List<(int, int)>();
-            this.history = new List<Move>();
-            this.botProbabilityMap = new ProbabilityMap(size, battleShips);
-            this.perimeterAttack = new PerimeterAttack(size);
-            
-            this.playerGrid.DisplayGrid();
-            Console.WriteLine("-------------------");
-            deployBattleShips(this.playerGrid);
-            this.playerGrid.DisplayGrid();
+            foreach (var boat in playerBoatPositions)
+            {
+                char boatType = boat.Key;
+                List<List<int>> positions = boat.Value;
+
+                // Vérifier que le bateau existe dans la liste des bateaux
+                if (!battleShips.ContainsKey(boatType))
+                {
+                    throw new ArgumentException($"Invalid boat type: {boatType}");
+                }
+
+                // Vérifier que le nombre de positions correspond à la taille du bateau
+                if (positions.Count != battleShips[boatType])
+                {
+                    throw new ArgumentException($"Incorrect number of positions for boat {boatType}. Expected {battleShips[boatType]} positions, got {positions.Count}");
+                }
+
+                // Placer le bateau sur la grille
+                foreach (var pos in positions)
+                {
+                    int row = pos[0];
+                    int col = pos[1];
+
+                    if (isCellEmpty(row, col))
+                    {
+                        grid.UpdateCell(row, col, boatType);
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Invalid position for boat {boatType} at ({row}, {col}). The cell is already occupied.");
+                    }
+                }
+            }
         }
+
 
         public int getDifficulty(){
             return this.difficulty;
+        }
+
+        public int getSize(){
+            return this.size;
         }
 
         public void deployBattleShips(Grid grid)
@@ -124,35 +166,38 @@
             return this.playerGrid.GetGrid();
         }
         
-        public List<List<List<int>>> getPlayerBoatLocation()
+        public Dictionary<char, List<List<int>>> getPlayerBoatLocation()
         {
-            List<List<List<int>>> BoatLocations = new List<List<List<int>>>();
-            
-            // Initialisation des sous-listes pour chaque bateau
-            for (int k = 0; k < this.battleShips.Count; k++)
-            {
-                BoatLocations.Add(new List<List<int>>());
-            }
-            
+            // Initialiser un dictionnaire pour stocker les positions des bateaux
+            Dictionary<char, List<List<int>>> boatLocations = new Dictionary<char, List<List<int>>>();
+
+            // Obtenir la grille du joueur
             int[,] grid = this.playerGrid.GetGrid();
 
+            // Parcourir la grille
             for (int row = 0; row < this.size; row++)
             {
                 for (int col = 0; col < this.size; col++)
                 {
+                    // Vérifier si la case contient un bateau
                     if (!isCellEmpty(row, col))
                     {
-                        int index = grid[row, col] - 'A'; // Convertir en index ('A'-'A' = 0, 'B'-'A' = 1, etc.)
-                        
-                        if (index >= 0 && index < BoatLocations.Count)
+                        char boatChar = (char)grid[row, col]; // Récupérer la lettre du bateau
+
+                        // Ajouter les coordonnées du bateau dans le dictionnaire
+                        if (!boatLocations.ContainsKey(boatChar))
                         {
-                            BoatLocations[index].Add(new List<int> { row, col });
+                            boatLocations[boatChar] = new List<List<int>>();
                         }
+
+                        boatLocations[boatChar].Add(new List<int> { row, col });
                     }
                 }
             }
-            return BoatLocations;
+
+            return boatLocations;
         }
+
 
         public int getId(){
             return this.id;
