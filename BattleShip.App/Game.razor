@@ -19,9 +19,9 @@
     <div>
         <label for="gridSize">Taille de la grille :</label>
         <select @bind="selectedGridSize">
-            <option value="5">5x5</option>
+            <option value="8">8x8</option>
             <option value="10">10x10</option>
-            <option value="15">15x15</option>
+            <option value="12">12x12</option>
         </select>
     </div>
 
@@ -109,6 +109,8 @@ else
             if (gameResponse != null)
             {
                 gameStarted = true;
+
+                GameState.Initialize(gridSize);
                 GameState.GameId = gameResponse.gameId;
 
                 // Initialiser la grille du joueur avec les bateaux
@@ -151,17 +153,8 @@ else
         {
             var attackResponse = await response.Content.ReadFromJsonAsync<AttackResponse>();
 
-            if (attackResponse.winner.HasValue)
-            {
-                GameState.Message = attackResponse.winner.Value == 1 ? "Vous avez gagné !" : "Vous avez perdu...";
-            }
-
             // Mettez à jour la grille de l'adversaire
             GameState.OpponentGrid[row, col] = attackResponse.playerAttack == 1;
-
-            // Mettez à jour la grille du joueur avec les résultats de l'attaque IA
-            var botCoordinates = attackResponse.botAttackCoordinates;
-            GameState.PlayerGrid[botCoordinates.row, botCoordinates.column] = attackResponse.botAttack == 1 ? 'X' : 'O';
 
             // Gestion des bateaux détruits
             if (attackResponse.destroyedBoatsCount != null)
@@ -172,6 +165,16 @@ else
                     Console.WriteLine($"Bateau détruit : {destroyedBoat.Key}, Nombre: {destroyedBoat.Value}");
                 }
             }
+
+            if (attackResponse.winner.HasValue)
+            {
+                GameState.Message = attackResponse.winner.Value == 1 ? "Vous avez gagné !" : "Vous avez perdu...";
+                return;
+            }
+
+            // Mettez à jour la grille du joueur avec les résultats de l'attaque IA
+            var botCoordinates = attackResponse.botAttackCoordinates;
+            GameState.PlayerGrid[botCoordinates.row, botCoordinates.column] = attackResponse.botAttack == 1 ? 'X' : 'O';
         }
         else
         {
