@@ -23,6 +23,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddGrpc();
+
+
 var app = builder.Build();
 
 app.UseCors("AllowAllOrigins");
@@ -276,6 +279,7 @@ app.MapPost("/game/undo", async (HttpContext httpContext, IValidator<UndoRequest
 .WithName("UndoMoves")
 .WithOpenApi();
 
+app.MapGrpcService<BattleShipGRPCService>();
 
 app.Run();
 

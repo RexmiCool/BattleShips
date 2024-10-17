@@ -8,12 +8,17 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BattleShip.Models\BattleShip.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Proto\game.proto" GrpcServices="Server" />
   </ItemGroup>
 
 </Project>

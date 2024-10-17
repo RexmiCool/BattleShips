@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+
+service BattleShipService {
+    rpc DisplayMessage(DisplayRequestGRPC) returns (DisplayResponseGRPC);
+}
+message DisplayRequestGRPC {
+    string todisplay = 1;
+}
+
+message DisplayResponseGRPC {
+    string displayed = 1;
+}
