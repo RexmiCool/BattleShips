@@ -1,0 +1,44 @@
+﻿.undo-button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #ffcc00;
+    color: black;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+    .undo-button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+
+.history-container {
+    height: 500px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+    .history-container ul {
+        height: 400px;
+        overflow-y: auto;
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .history-container li {
+        padding: 5px;
+        border-bottom: 1px solid #ddd;
+    }
+
+        .history-container li:nth-child(odd) {
+            background-color: #f1f1f1;
+        }
+
+        .history-container li:nth-child(even) {
+            background-color: #e1e1e1;
+        }

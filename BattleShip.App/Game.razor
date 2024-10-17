@@ -1,4 +1,4 @@
-﻿@page "/game"
+﻿@page "/"
 @inject HttpClient Http
 @inject GameState GameState
 
@@ -35,6 +35,7 @@ else
 {
     <button class="restart-button" @onclick="RestartGame">Redémarrer la partie</button>
     <div class="board-container">
+
         <div class="grid-container">
             <h4>Grille du Joueur</h4>
             <table>
@@ -70,6 +71,27 @@ else
                     </tr>
                 }
             </table>
+        </div>
+
+        <div class="history-container">
+            <h4>Historique</h4>
+            @if (history != null)
+            {
+                <ul>
+                    @foreach (var move in history)
+                    {
+                        <li>@move</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Aucun historique disponible.</p>
+            }
+
+            <button class="undo-button" @onclick="UndoMove" disabled="@(history == null || history.Count == 0)">
+                Retour arrière
+            </button>
         </div>
 
         <div class="grid-container">
@@ -183,28 +205,26 @@ else
 
             // Mettez à jour la grille de l'adversaire
             GameState.OpponentGrid[row, col] = attackResponse.playerAttack == 1;
+            await LoadHistory();
 
-            // Gestion des bateaux détruits
-            if (attackResponse.destroyedBoatsCount != null)
+            if (attackResponse.winner.HasValue && attackResponse.winner.Value == 1)
             {
-                foreach (var destroyedBoat in attackResponse.destroyedBoatsCount)
-                {
-                    // Ici, vous pouvez gérer l'affichage ou la logique en fonction des bateaux détruits
-                    Console.WriteLine($"Bateau détruit : {destroyedBoat.Key}, Nombre: {destroyedBoat.Value}");
-                }
-            }
-
-            if (attackResponse.winner.HasValue)
-            {
-                GameState.Message = attackResponse.winner.Value == 1 ? "Vous avez gagné !" : "Vous avez perdu...";
+                GameState.Message = "Vous avez gagné !";
                 GameState.GameFinished = true;  // Marque la fin de la partie
                 return;
             }
 
-
             // Mettez à jour la grille du joueur avec les résultats de l'attaque IA
             var botCoordinates = attackResponse.botAttackCoordinates;
             GameState.PlayerGrid[botCoordinates.row, botCoordinates.column] = attackResponse.botAttack == 1 ? 'X' : 'O';
+            await LoadHistory();
+
+            if (attackResponse.winner.HasValue && attackResponse.winner.Value == 0)
+            {
+                GameState.Message = "Vous avez perdu...";
+                GameState.GameFinished = true;
+                return;
+            }
         }
         else
         {
@@ -231,6 +251,7 @@ else
             {
                 GameState.GameId = gameResponse.gameId;
                 GameState.GameFinished = false;
+                await LoadHistory();
 
                 // Réinitialiser la grille du joueur
                 for (int row = 0; row < GameState.PlayerGrid.GetLength(0); row++)
@@ -267,6 +288,55 @@ else
         else
         {
             GameState.Message = "Erreur lors du redémarrage de la partie.";
+        }
+    }
+
+    private List<string> history;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistory();
+    }
+
+    private async Task LoadHistory()
+    {
+        try
+        {
+            int gameId = GameState.GameId; // Utilise l'ID du jeu
+            history = await Http.GetFromJsonAsync<List<string>>($"game/history?gameId={gameId}");
+            StateHasChanged(); // Force la mise à jour de l'interface
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement de l'historique: {ex.Message}");
+        }
+    }
+
+    private async Task UndoMove()
+    {
+        try
+        {
+            if (history != null && history.Count > 0)
+            {
+                var undoRequest = new UndoRequest(GameState.GameId, 2);
+
+                var response = await Http.PostAsJsonAsync("/game/undo", undoRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Si succès, recharge l'historique et mets à jour les grilles
+                    await LoadHistory();
+                    GameState.Message = "Dernier coup annulé avec succès.";
+                }
+                else
+                {
+                    GameState.Message = "Erreur lors de l'annulation du coup.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            GameState.Message = $"Erreur: {ex.Message}";
         }
     }
 
