@@ -16,10 +16,13 @@
 
         public int GridSize { get; private set; }  // Taille de la grille choisie
 
+        public bool? GameFinished { get; set; }
+
         public GameState()
         {
             Message = "";
             GameId = 0;
+            GameFinished = false;
         }
 
         // Méthode statique pour obtenir l'instance unique du GameState
@@ -43,6 +46,7 @@
             OpponentGrid = new bool?[GridSize, GridSize];
             Message = "";
             GameId = 0;
+            GameFinished = false;
         }
 
         // Méthode pour réinitialiser l'état du jeu selon la nouvelle taille

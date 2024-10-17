@@ -6,31 +6,35 @@
 
 @if (!gameStarted)
 {
-    <h4>Choisir la difficulté et la taille de la grille :</h4>
-    <div>
-        <label for="difficulty">Difficulté :</label>
-        <select @bind="selectedDifficulty">
-            <option value="1">Facile</option>
-            <option value="2">Moyen</option>
-            <option value="3">Difficile</option>
-        </select>
-    </div>
+    <div class="setup-container">
+        <h4>Choisir la difficulté et la taille de la grille :</h4>
+        <div class="form-group">
+            <label for="difficulty">Difficulté :</label>
+            <select class="styled-select" @bind="selectedDifficulty">
+                <option value="1">Facile</option>
+                <option value="2">Moyen</option>
+                <option value="3">Difficile</option>
+            </select>
+        </div>
 
-    <div>
-        <label for="gridSize">Taille de la grille :</label>
-        <select @bind="selectedGridSize">
-            <option value="8">8x8</option>
-            <option value="10">10x10</option>
-            <option value="12">12x12</option>
-        </select>
-    </div>
+        <div class="form-group">
+            <label for="gridSize">Taille de la grille :</label>
+            <select class="styled-select" @bind="selectedGridSize">
+                <option value="8">8x8</option>
+                <option value="10">10x10</option>
+                <option value="12">12x12</option>
+            </select>
+        </div>
 
-    <button @onclick="() => StartNewGame(selectedDifficulty, selectedGridSize)">Démarrer une nouvelle partie</button>
+        <button class="start-button" @onclick="() => StartNewGame(selectedDifficulty, selectedGridSize)">
+            Démarrer une nouvelle partie
+        </button>
+    </div>
 }
 else
 {
-    <button @onclick="RestartGame">Redémarrer la partie</button>
-    <div class="game-container">
+    <button class="restart-button" @onclick="RestartGame">Redémarrer la partie</button>
+    <div class="board-container">
         <div class="grid-container">
             <h4>Grille du Joueur</h4>
             <table>
@@ -39,15 +43,27 @@ else
                     <tr>
                         @for (int col = 0; col < GameState.PlayerGrid.GetLength(1); col++)
                         {
-                            <td>
-                                @if (char.IsLetter(GameState.PlayerGrid[row, col]))  // Si un bateau est présent
+                            <td class="@(new[] { 'A', 'B', 'C', 'D', 'E', 'F' }.Contains(GameState.PlayerGrid[row, col])
+                            ? "bateau"
+                            : GameState.PlayerGrid[row, col] == 'X'
+                                ? "hit"
+                                : GameState.PlayerGrid[row, col] == 'O'
+                                    ? "miss"
+                                    : "")">
+                                @if (GameState.PlayerGrid[row, col] == 'X')
+                                {
+                                    <img src="images/hit.png" alt="Touché" />
+                                }
+                                else if (GameState.PlayerGrid[row, col] == 'O')
+                                {
+                                    <img src="images/miss_splash.png" alt="Raté" />
+                                }
+                                else @if (GameState.PlayerGrid[row, col] != '\0')
                                 {
                                     <span>@GameState.PlayerGrid[row, col]</span>
-                                    // Affiche le caractère du bateau
-                                }
-                                else
+                                } else
                                 {
-                                    <span>~</span> <!-- Vide si pas de bateau -->
+                                    <span>~</span>
                                 }
                             </td>
                         }
@@ -64,20 +80,20 @@ else
                     <tr>
                         @for (int col = 0; col < GameState.OpponentGrid.GetLength(1); col++)
                         {
-                            var currentRow = row;  // Capture la valeur actuelle de row
-                            var currentCol = col;  // Capture la valeur actuelle de col
-                            <td>
+                            var currentRow = row;
+                            var currentCol = col;
+                            <td class="@(GameState.OpponentGrid[currentRow, currentCol] == true ? "hit" : GameState.OpponentGrid[currentRow, currentCol] == false ? "miss" : "")">
                                 @if (GameState.OpponentGrid[currentRow, currentCol] == true)
                                 {
                                     <img src="images/hit.png" alt="Touché" />
                                 }
                                 else if (GameState.OpponentGrid[currentRow, currentCol] == false)
                                 {
-                                    <img src="images/miss.png" alt="Raté" />
+                                    <img src="images/miss_splash.png" alt="Raté" />
                                 }
                                 else
                                 {
-                                    <button @onclick="() => PlayMove(GameState.GameId, currentRow, currentCol)">?</button> <!-- Case cliquable -->
+                                    <button class="invisible-button" @onclick="() => PlayMove(GameState.GameId, currentRow, currentCol)" disabled="@GameState.GameFinished">?</button>
                                 }
                             </td>
                         }
@@ -91,6 +107,17 @@ else
     {
         <div class="alert alert-success">@GameState.Message</div>
     }
+
+    @if (GameState.GameFinished == true)
+    {
+        <div class="overlay">
+            <div class="popup">
+                <h2>@(GameState.Message)</h2>
+                <button @onclick="RestartGame">Rejouer</button>
+            </div>
+        </div>
+    }
+
 }
 
 @code {
@@ -170,8 +197,10 @@ else
             if (attackResponse.winner.HasValue)
             {
                 GameState.Message = attackResponse.winner.Value == 1 ? "Vous avez gagné !" : "Vous avez perdu...";
+                GameState.GameFinished = true;  // Marque la fin de la partie
                 return;
             }
+
 
             // Mettez à jour la grille du joueur avec les résultats de l'attaque IA
             var botCoordinates = attackResponse.botAttackCoordinates;
@@ -201,6 +230,7 @@ else
             if (gameResponse != null)
             {
                 GameState.GameId = gameResponse.gameId;
+                GameState.GameFinished = false;
 
                 // Réinitialiser la grille du joueur
                 for (int row = 0; row < GameState.PlayerGrid.GetLength(0); row++)
