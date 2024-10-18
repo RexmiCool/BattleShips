@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IValidator<RestartGameRequest>, RestartGameRequestValidator>();
 builder.Services.AddScoped<IValidator<AttackRequest>, AttackRequestValidator>();
 builder.Services.AddScoped<IValidator<UndoRequest>, UndoRequestValidator>();
+builder.Services.AddScoped<IValidator<CreateUserRequest>, CreateUserRequestValidator>();
 
 builder.Services.AddCors(options =>
 {
@@ -44,10 +45,16 @@ Dictionary<string, User> users = new Dictionary<string, User>();
 Dictionary<string, int> leaderBoard = new Dictionary<string, int>();
 
 
-app.MapPost("/user/new", async (HttpContext httpContext) =>
+app.MapPost("/user/new", async (HttpContext httpContext, IValidator <CreateUserRequest> validator) =>
 {
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<CreateUserRequest>(requestBody);
+
+    var validationResult = await validator.ValidateAsync(request);
+    if (!validationResult.IsValid)
+    {
+        return Results.BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+    }
 
     string username = request.username;
 
@@ -211,7 +218,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext, IValidator<AttackReq
     int? winner = game.CheckForWinner();
     if (winner != null)
     {
-        increaseLeaderboard(game, winner);
+        leaderBoard = increaseLeaderboard(leaderBoard, game, winner);
         return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1), game.GetDestructionCounts(), game.getScoreBoard()));
     }
 
@@ -233,7 +240,7 @@ app.MapPost("/game/attack", async (HttpContext httpContext, IValidator<AttackReq
     }
     
     winner = game.CheckForWinner();
-    increaseLeaderboard(game, winner);
+    increaseLeaderboard(leaderBoard, game, winner);
 
     return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn), game.GetDestructionCounts(), game.getScoreBoard()));
 })
@@ -266,9 +273,8 @@ app.MapPost("/game/undo", async (HttpContext httpContext, IValidator<UndoRequest
     }
 
     Game game = games[request.gameId];
-    game.Undo(request.moves);
 
-    return Results.Ok("Moves undone successfully.");
+    return Results.Ok(game.Undo(request.moves));
 })
 .WithName("UndoMoves")
 .WithOpenApi();
@@ -284,7 +290,8 @@ app.MapGrpcService<BattleShipGRPCService>();
 
 app.Run();
 
-void increaseLeaderboard(Game game, int? winner){
+
+Dictionary<string, int> increaseLeaderboard(Dictionary<string, int> leaderBoard, Game game, int? winner){
     if(winner != null)
     {
         string playerName;
@@ -293,7 +300,7 @@ void increaseLeaderboard(Game game, int? winner){
             playerName = game.getPlayerOne().getUsername();
         }
         else{
-            playerName = game.getPlayerTwo().getUsername();
+            playerName = game.getMulti()?game.getPlayerTwo().getUsername():"Bot";
         }
         if (leaderBoard.ContainsKey(playerName))
         {
@@ -304,45 +311,5 @@ void increaseLeaderboard(Game game, int? winner){
             leaderBoard[playerName] = 1;
         }
     }
-}
-
-bool ValidateBoatPositions(Dictionary<char, List<List<int>>> playerBoatPositions, int gridSize)
-{
-    // Liste des tailles de bateaux correspondantes
-    Dictionary<char, int> boatSizes = new Dictionary<char, int>()
-    {
-        { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 }
-    };
-
-    foreach (var boat in playerBoatPositions)
-    {
-        char boatType = boat.Key;
-        List<List<int>> positions = boat.Value;
-
-        // Vérifier si le type de bateau existe
-        if (!boatSizes.ContainsKey(boatType))
-        {
-            return false; // Type de bateau invalide
-        }
-
-        // Vérifier que le nombre de positions correspond à la taille du bateau
-        if (positions.Count != boatSizes[boatType])
-        {
-            return false; // Taille de bateau incorrecte
-        }
-
-        // Vérifier que toutes les positions sont valides (dans les limites de la grille)
-        foreach (var pos in positions)
-        {
-            int row = pos[0];
-            int col = pos[1];
-
-            if (row < 0 || row >= gridSize || col < 0 || col >= gridSize)
-            {
-                return false; // Position en dehors des limites de la grille
-            }
-        }
-    }
-
-    return true;
+    return leaderBoard;
 }

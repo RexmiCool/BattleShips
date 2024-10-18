@@ -345,11 +345,11 @@
                 }
 
                 // Enregistrer le coup du bot dans l'historique
-                history.Add(new Move("Bot", row, column, hit));
+                history.Add(new Move(this.multi ? this.playerTwo.getUsername() : "Bot", row, column, hit));
 
                 if (hit && IsShipSunk(playerOneGrid, shipType))
                 {
-                    destructionCounts["Bot"][shipType]++;
+                    destructionCounts[this.multi ? this.playerTwo.getUsername() : "Bot"][shipType]++;
                 }
 
                 return hit ? 1 : 0;
@@ -405,11 +405,11 @@
                 }
 
                 // Enregistrer le coup du bot dans l'historique
-                history.Add(new Move("Bot", row, column, hit));
+                history.Add(new Move(this.multi ? this.playerTwo.getUsername() : "Bot", row, column, hit));
 
                 if (hit && IsShipSunk(playerOneGrid, shipType))
                 {
-                    destructionCounts["Bot"][shipType]++;
+                    destructionCounts[this.multi ? this.playerTwo.getUsername() : "Bot"][shipType]++;
                 }
 
                 // Mise à jour de la carte des tirs dans l'attaque par périmètre
@@ -453,11 +453,11 @@
                 }
 
                 // Enregistrer le coup du bot dans l'historique
-                history.Add(new Move("Bot", row, column, hit));
+                history.Add(new Move(this.multi ? this.playerTwo.getUsername() : "Bot", row, column, hit));
 
                 if (hit && IsShipSunk(playerOneGrid, shipType))
                 {
-                    destructionCounts["Bot"][shipType]++;
+                    destructionCounts[this.multi ? this.playerTwo.getUsername() : "Bot"][shipType]++;
                 }
 
                 // Mise à jour de la carte des probabilités
@@ -495,11 +495,11 @@
                 }
 
                 // Enregistrer le coup dans l'historique
-                history.Add(new Move("Player", row, column, hit));
+                history.Add(new Move(this.playerOne.getUsername(), row, column, hit));
 
                 if (hit && IsShipSunk(botPlayerTwoGrid, shipType))
                 {
-                    destructionCounts["Player"][shipType]++;
+                    destructionCounts[this.playerOne.getUsername()][shipType]++;
                 }
 
                 return hit ? 1 : 0;
@@ -519,29 +519,32 @@
         }
 
         // Revenir en arrière d'un nombre de coups
-        public void Undo(int moves)
+        public List<Move> Undo(int moves)
         {
             moves = moves * 2;
             if (moves <= 0 || moves > history.Count)
             {
                 Console.WriteLine("Invalid number of moves to undo.");
-                return;
+                return null;
             }
+
+            List<Move> undoneMoves = new List<Move>();
 
             for (int i = 0; i < moves; i++)
             {
                 // Supprimer le dernier coup de l'historique
                 Move lastMove = history.Last();
+                undoneMoves.Add(lastMove);
                 history.RemoveAt(history.Count - 1);
 
                 // Restaurer l'état des grilles en fonction de l'historique supprimé
-                if (lastMove.Player == "Player")
+                if (lastMove.Player == this.playerOne.getUsername())
                 {
                     // Réinitialiser la case
                     botPlayerTwoGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du bot
                     this.botProbabilityMap.RestoreShotMap(lastMove.Row, lastMove.Column, lastMove.Hit); // Restaurer la carte des probabilités
                 }
-                else if (lastMove.Player == "Bot")
+                else if (lastMove.Player == (this.multi ? this.playerTwo.getUsername() : "Bot"))
                 {
                     // Réinitialiser la case
                     playerOneGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du joueur
@@ -550,6 +553,7 @@
 
                 Console.WriteLine($"Undo {lastMove.Player}'s move at ({lastMove.Row}, {lastMove.Column})");
             }
+            return undoneMoves;
         }
 
         // Vérifier s'il y a un gagnant
@@ -557,12 +561,12 @@
         {
             if (IsAllShipsSunk(botPlayerTwoGrid))
             {
-                this.scoreBoard["Player"]++;
+                this.scoreBoard[this.playerOne.getUsername()]++;
                 return 1;
             }
             if (IsAllShipsSunk(playerOneGrid))
             {                
-                this.scoreBoard["Bot"]++;
+                this.scoreBoard[this.multi ? this.playerTwo.getUsername() : "Bot"]++;
                 return 2;
             }
             return null;

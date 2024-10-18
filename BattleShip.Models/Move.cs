@@ -2,10 +2,10 @@
 {
     public class Move
     {
-        public string Player { get; }  // "Player" ou "Bot"
+        public string Player { get; }
         public int Row { get; }
         public int Column { get; }
-        public bool Hit { get; }  // Indique si c'était un "Touché"
+        public bool Hit { get; }
 
         public Move(string player, int row, int column, bool hit)
         {

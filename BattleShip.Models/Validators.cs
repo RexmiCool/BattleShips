@@ -21,6 +21,15 @@ namespace BattleShip.Models
         }
     }
 
+    public class CreateUserRequestValidator : AbstractValidator<CreateUserRequest>
+    {
+        public CreateUserRequestValidator()
+        {
+            RuleFor(x => x.username).NotEqual("Bot").WithMessage("Le username ne doit pas etre égal à Bot.");
+            RuleFor(x => x.username).NotEmpty().WithMessage("Le username ne doit pas etre vide.");
+        }
+    }
+
     public class RestartGameRequestValidator : AbstractValidator<RestartGameRequest>
     {
         public RestartGameRequestValidator()
