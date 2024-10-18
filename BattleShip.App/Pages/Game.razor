@@ -44,13 +44,24 @@ else
                     <tr>
                         @for (int col = 0; col < GameState.PlayerGrid.GetLength(1); col++)
                         {
-                            <td class="@(new[] { 'A', 'B', 'C', 'D', 'E', 'F' }.Contains(GameState.PlayerGrid[row, col])
-                            ? "bateau"
-                            : GameState.PlayerGrid[row, col] == 'X'
-                                ? "hit"
-                                : GameState.PlayerGrid[row, col] == 'O'
-                                    ? "miss"
-                                    : "")">
+                            <td class="@(IsBoatPart(GameState.PlayerGrid[row, col]) ? "bateau" : "")">
+                                @if (IsBoatPart(GameState.DefaultPlayerGrid[row, col]))
+                                {
+                                    if(GameState.DefaultPlayerGrid[row, col]=='A'){
+                                        <img src="images/boat_A.png" 
+                                        alt="Bateau A" />
+                                    }
+                                    else{
+                                        var boatType = GameState.DefaultPlayerGrid[row, col];  // Le type de bateau (A, B, C...)
+                                        var orientation = GetBoatOrientation(row, col); // Méthode pour déterminer l'orientation du bateau
+                                        var partType = GetBoatPartType(row, col); // Méthode pour déterminer si c'est l'avant, le milieu, ou l'arrière
+
+                                        // Sélectionner l'image en fonction de la position et de l'orientation
+                                        <img src="images/boat_@(partType)_@(orientation).png" 
+                                            alt="Bateau @(boatType) @(partType) @(orientation)" />
+                                    }
+                                }
+
                                 @if (GameState.PlayerGrid[row, col] == 'X')
                                 {
                                     <img src="images/hit.png" alt="Touché" />
@@ -59,12 +70,9 @@ else
                                 {
                                     <img src="images/miss_splash.png" alt="Raté" />
                                 }
-                                else @if (GameState.PlayerGrid[row, col] != '\0')
+                                else
                                 {
-                                    <span>@GameState.PlayerGrid[row, col]</span>
-                                } else
-                                {
-                                    <span>~</span>
+                                    <span> </span>  // Case vide
                                 }
                             </td>
                         }
@@ -181,6 +189,7 @@ else
                         int row = part[0];
                         int col = part[1];
                         GameState.PlayerGrid[row, col] = boat.Key;  // Utilise le caractère du bateau
+                        GameState.DefaultPlayerGrid[row, col] = boat.Key;
                     }
                 }
 
@@ -269,6 +278,7 @@ else
                     for (int col = 0; col < GameState.PlayerGrid.GetLength(1); col++)
                     {
                         GameState.PlayerGrid[row, col] = ' '; // Remettre à l'état vide, par exemple un espace
+                        GameState.DefaultPlayerGrid[row, col] = ' '; // Remettre à l'état vide, par exemple un espace
                     }
                 }
 
@@ -289,6 +299,7 @@ else
                         int row = part[0];
                         int col = part[1];
                         GameState.PlayerGrid[row, col] = boat.Key;  // Utilise le caractère du bateau
+                        GameState.DefaultPlayerGrid[row, col] = boat.Key;  // Utilise le caractère du bateau
                     }
                 }
 
@@ -349,5 +360,56 @@ else
             GameState.Message = $"Erreur: {ex.Message}";
         }
     }
+
+    private bool IsBoatPart(char cell)
+    {
+        return new[] { 'A', 'B', 'C', 'D', 'E', 'F' }.Contains(cell);
+    }
+
+    private string GetBoatOrientation(int row, int col)
+    {
+        if (row + 1 < GameState.DefaultPlayerGrid.GetLength(0) && GameState.DefaultPlayerGrid[row, col] == GameState.DefaultPlayerGrid[row + 1, col])
+        {
+            return "vertical";
+        }
+        else if(row - 1 < GameState.DefaultPlayerGrid.GetLength(0) && GameState.DefaultPlayerGrid[row, col] == GameState.DefaultPlayerGrid[row - 1, col]){
+            return "vertical";
+        }
+
+        return "horizontal";  // Par défaut
+    }
+
+    private string GetBoatPartType(int row, int col)
+    {
+        // Vérifier la position du bateau (avant, milieu, arrière)
+
+        // Si la case précédente et suivante dans l'orientation sont libres ou différentes, c'est une extrémité.
+        if (GetBoatOrientation(row, col) == "horizontal")
+        {
+            if (col - 1 < 0 || GameState.DefaultPlayerGrid[row, col - 1] != GameState.DefaultPlayerGrid[row, col])  // Avant
+            {
+                return "front"; //front
+            }
+            else if (col + 1 >= GameState.DefaultPlayerGrid.GetLength(1) || GameState.DefaultPlayerGrid[row, col + 1] != GameState.DefaultPlayerGrid[row, col])  // Arrière
+            {
+                return "back";
+            }
+        }
+        else // Orientation verticale
+        {
+            if (row - 1 < 0 || GameState.DefaultPlayerGrid[row - 1, col] != GameState.DefaultPlayerGrid[row, col])  // Avant
+            {
+                return "front";
+            }
+            else if (row + 1 >= GameState.DefaultPlayerGrid.GetLength(0) || GameState.DefaultPlayerGrid[row + 1, col] != GameState.DefaultPlayerGrid[row, col])  // Arrière
+            {
+                return "back";
+            }
+        }
+
+        return "middle";  // Sinon, c'est une partie du milieu
+    }
+
+
 
 }

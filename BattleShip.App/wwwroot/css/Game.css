@@ -59,6 +59,7 @@ table {
 }
 
 td {
+    position: relative;
     width: 40px;
     height: 40px;
     text-align: center;
@@ -67,14 +68,14 @@ td {
 }
 
     td img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain; /* Contenir l'image dans la cellule sans la déformer */
+        width: 100%;    /* Remplir la largeur du td */
+        height: 100%;   /* Remplir la hauteur du td */
+        object-fit: cover; /* Contenir l'image dans la cellule sans la déformer */
+        position: absolute; /* Permet de les superposer */
+        top: 0;
+        left: 0;
     }
 
-.bateau {
-    background-color: #8b8b8b;
-}
 
 .hit {
     background-color: orange;
