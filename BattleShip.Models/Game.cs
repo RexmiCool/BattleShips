@@ -521,6 +521,7 @@
         // Revenir en arrière d'un nombre de coups
         public void Undo(int moves)
         {
+            moves = moves * 2;
             if (moves <= 0 || moves > history.Count)
             {
                 Console.WriteLine("Invalid number of moves to undo.");

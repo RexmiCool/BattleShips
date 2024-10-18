@@ -31,7 +31,6 @@ var app = builder.Build();
 app.UseCors("AllowAllOrigins");
 app.UseHttpsRedirection();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -42,6 +41,7 @@ app.UseHttpsRedirection();
 
 Dictionary<int, Game> games = new Dictionary<int, Game>();
 Dictionary<string, User> users = new Dictionary<string, User>();
+Dictionary<string, int> leaderBoard = new Dictionary<string, int>();
 
 
 app.MapPost("/user/new", async (HttpContext httpContext) =>
@@ -49,17 +49,7 @@ app.MapPost("/user/new", async (HttpContext httpContext) =>
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<CreateUserRequest>(requestBody);
 
-    if (request == null)
-    {
-        return Results.BadRequest("Invalid request body");
-    }
-
     string username = request.username;
-
-    if (username == null)
-    {
-        return Results.BadRequest("Invalid username.");
-    }
 
     if (users.Keys.Contains(username))
     {
@@ -87,11 +77,6 @@ app.MapPost("/game/new", async (HttpContext httpContext, IValidator <RestartGame
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
 
-    if (request == null)
-    {
-        return Results.BadRequest("Invalid request body");
-    }
-
     var validationResult = await validator.ValidateAsync(request);
     if (!validationResult.IsValid)
     {
@@ -113,43 +98,14 @@ app.MapPost("/game/new", async (HttpContext httpContext, IValidator <RestartGame
     {
         playerTwo = users["playerTwoUsername"];
     }
-    else
-    {
-        // Vérifier la validité de la difficulté
-        if (difficulty < 1 || difficulty > 3)
-        {
-            return Results.BadRequest("Invalid difficulty level. Must be 1 (easy), 2 (medium), or 3 (hard).");
-        }
-    }
 
-
-
-    // Vérifier la validité de la taille de grille
-    if (gridSize != 8 && gridSize != 10 && gridSize != 12)
-    {
-        return Results.BadRequest("Invalid size for the grid. Must be 8 (easy), 10 (medium), or 12 (hard).");
-    }
     
-    if (playerOneBoatPositions != null)
-    {
-        if (!ValidateBoatPositions(playerOneBoatPositions, gridSize))
-        {
-            return Results.BadRequest("Invalid boat positions provided.");
-        }
-    }
-    else
+    if (playerOneBoatPositions == null)
     {
         playerOneBoatPositions = null;
     }
     
-    if (playerTwoBoatPositions != null)
-    {
-        if (!ValidateBoatPositions(playerTwoBoatPositions, gridSize))
-        {
-            return Results.BadRequest("Invalid boat positions provided.");
-        }
-    }
-    else
+    if (playerTwoBoatPositions == null)
     {
         playerTwoBoatPositions = null;
     }
@@ -167,7 +123,6 @@ app.MapPost("/game/new", async (HttpContext httpContext, IValidator <RestartGame
     game.setId(games.Count);
     games.Add(game.getId(), game);
 
-    // Utiliser un record pour retourner la réponse
     var response = new GameResponse(game.getId(), game.getSize(), game.getPlayerBoatLocation());
 
     return Results.Ok(response);
@@ -181,11 +136,6 @@ app.MapPost("/game/restart", async (HttpContext httpContext, IValidator<RestartG
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<RestartGameRequest>(requestBody);
 
-    if (request == null)
-    {
-        return Results.BadRequest("Invalid request body");
-    }
-
     var validationResult = await validator.ValidateAsync(request);
     if (!validationResult.IsValid)
     {
@@ -197,53 +147,18 @@ app.MapPost("/game/restart", async (HttpContext httpContext, IValidator<RestartG
     int gridSize = request.gridSize;
     Dictionary<char, List<List<int>>> playerOneBoatPositions = request.playerOneBoatPositions;
     Dictionary<char, List<List<int>>> playerTwoBoatPositions = request.playerTwoBoatPositions;
-
-    if (!games[gameId].getMulti())
-    {
-        // Vérifier la validité de la difficulté
-        if (difficulty < 1 || difficulty > 3)
-        {
-            return Results.BadRequest("Invalid difficulty level. Must be 1 (easy), 2 (medium), or 3 (hard).");
-        }
-    }
     
-    // Vérifier la validité de la taille de grille
-    if (gridSize != 8 && gridSize != 10 && gridSize != 12)
-    {
-        return Results.BadRequest("Invalid size for the grid. Must be 8 (easy), 10 (medium), or 12 (hard).");
-    }
-
-    if (!games.ContainsKey(gameId))
-    {
-        return Results.NotFound($"Game with ID {gameId} not found");
-    }
-
-    if (playerOneBoatPositions != null)
-    {
-        if (!ValidateBoatPositions(playerOneBoatPositions, gridSize))
-        {
-            return Results.BadRequest("Invalid boat positions provided.");
-        }
-    }
-    else
+    if (playerOneBoatPositions == null)
     {
         playerOneBoatPositions = null;
     }
 
     if (playerTwoBoatPositions != null)
     {
-        if (!ValidateBoatPositions(playerTwoBoatPositions, gridSize))
-        {
-            return Results.BadRequest("Invalid boat positions provided.");
-        }
-    }
-    else
-    {
         playerTwoBoatPositions = null;
     }
 
     int playerOneScore = games[gameId].getScore(games[gameId].getPlayerOne().getUsername());
-
     int botPlayerTwoScore = 0;
     if (games[gameId].getMulti()){
         botPlayerTwoScore = games[gameId].getScore(games[gameId].getPlayerTwo().getUsername());
@@ -252,8 +167,6 @@ app.MapPost("/game/restart", async (HttpContext httpContext, IValidator<RestartG
         botPlayerTwoScore = games[gameId].getScore("Bot");
     }
     
-    // Créer un nouvel objet Game
-    // Game game = new Game(difficulty, gridSize, null, playerBoatPositions, playerScore, botScore);
     Game game = new Game(games[gameId].getMulti(),
                         games[gameId].getPlayerOne(),
                         games[gameId].getPlayerTwo(),
@@ -265,13 +178,10 @@ app.MapPost("/game/restart", async (HttpContext httpContext, IValidator<RestartG
                         playerOneScore,
                         botPlayerTwoScore);
 
-    // Attribuer un ID au jeu
     game.setId(gameId);
     
-    // Remplacer l'ancien jeu par le nouveau dans la collection
     games[gameId] = game;
 
-    // Utiliser un record pour retourner la réponse
     var response = new GameResponse(gameId, game.getSize(), game.getPlayerBoatLocation());
 
     return Results.Ok(response);
@@ -285,11 +195,6 @@ app.MapPost("/game/attack", async (HttpContext httpContext, IValidator<AttackReq
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<AttackRequest>(requestBody);
 
-    if (request == null)
-    {
-        return Results.BadRequest("Invalid request body");
-    }
-
     var validationResult = await validator.ValidateAsync(request);
     if (!validationResult.IsValid)
     {
@@ -300,21 +205,16 @@ app.MapPost("/game/attack", async (HttpContext httpContext, IValidator<AttackReq
     int row = request.row;
     int column = request.column;
 
-    if (!games.ContainsKey(gameId))
-    {
-        return Results.NotFound($"Game with ID {gameId} not found");
-    }
-
     Game game = games[gameId];
     int playerAttack = game.AttackPlayer(row, column);
     
     int? winner = game.CheckForWinner();
     if (winner != null)
     {
+        increaseLeaderboard(game, winner);
         return Results.Ok(new AttackResponse(winner, playerAttack, 0, new BotAttackCoordinates(-1, -1), game.GetDestructionCounts(), game.getScoreBoard()));
     }
 
-    // Faire attaquer l'IA
     int botAttack = 0;
     int botRow, botColumn;
     if (game.getDifficulty() == 1){
@@ -333,8 +233,8 @@ app.MapPost("/game/attack", async (HttpContext httpContext, IValidator<AttackReq
     }
     
     winner = game.CheckForWinner();
+    increaseLeaderboard(game, winner);
 
-    // Retourner l'état de l'attaque et du jeu
     return Results.Ok(new AttackResponse(winner, playerAttack, botAttack, new BotAttackCoordinates(botRow, botColumn), game.GetDestructionCounts(), game.getScoreBoard()));
 })
 .WithName("MakeAttack")
@@ -359,20 +259,10 @@ app.MapPost("/game/undo", async (HttpContext httpContext, IValidator<UndoRequest
     var requestBody = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
     var request = JsonSerializer.Deserialize<UndoRequest>(requestBody);
 
-    if (request == null || request.moves <= 0)
-    {
-        return Results.BadRequest("Invalid request body");
-    }
-
     var validationResult = await validator.ValidateAsync(request);
     if (!validationResult.IsValid)
     {
         return Results.BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-    }
-
-    if (!games.ContainsKey(request.gameId))
-    {
-        return Results.NotFound($"Game with ID {request.gameId} not found");
     }
 
     Game game = games[request.gameId];
@@ -383,9 +273,38 @@ app.MapPost("/game/undo", async (HttpContext httpContext, IValidator<UndoRequest
 .WithName("UndoMoves")
 .WithOpenApi();
 
+app.MapGet("/game/laederboard", () =>
+{
+    return Results.Ok(leaderBoard);
+})
+.WithName("GetLeaderboard")
+.WithOpenApi();
+
 app.MapGrpcService<BattleShipGRPCService>();
 
 app.Run();
+
+void increaseLeaderboard(Game game, int? winner){
+    if(winner != null)
+    {
+        string playerName;
+        if (winner == 1)
+        {
+            playerName = game.getPlayerOne().getUsername();
+        }
+        else{
+            playerName = game.getPlayerTwo().getUsername();
+        }
+        if (leaderBoard.ContainsKey(playerName))
+        {
+            leaderBoard[playerName]++;
+        }
+        else
+        {
+            leaderBoard[playerName] = 1;
+        }
+    }
+}
 
 bool ValidateBoatPositions(Dictionary<char, List<List<int>>> playerBoatPositions, int gridSize)
 {
