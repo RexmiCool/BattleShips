@@ -21,6 +21,12 @@ namespace BattleShip.App
             builder.Services.AddTransient<IValidator<UndoRequest>, UndoRequestValidator>();
             builder.Services.AddTransient<IValidator<RestartGameRequest>, RestartGameRequestValidator>();
 
+            builder.Services.AddGrpcClient<BattleShipService.BattleShipServiceClient>(o =>
+            {
+                o.Address = new Uri("https://localhost:5001"); // Remplace par l'URL de ton API
+            });
+
+
             await builder.Build().RunAsync();
         }
     }

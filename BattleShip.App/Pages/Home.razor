@@ -1,7 +1,24 @@
-﻿@page "/"
+﻿@page "/test"
+@inject BattleShipService.BattleShipServiceClient battleShipServiceClient
 
-<PageTitle>Home</PageTitle>
+<h3>Test GRPC</h3>
 
-<h1>Hello, world!</h1>
+<input @bind="messageToSend" placeholder="Entrez un message" />
+<button @onclick="SendMessage">Envoyer</button>
 
-Welcome to your new app.
+<p>@responseMessage</p>
+
+@code {
+    private string messageToSend;
+    private string responseMessage;
+
+    private async Task SendMessage()
+    {
+        // Créer une instance de DisplayRequestGRPC
+        var request = new DisplayRequestGRPC { Todisplay = messageToSend };
+
+        // Appeler le service gRPC
+        var response = await battleShipServiceClient.DisplayMessageAsync(request);
+        responseMessage = response.Displayed; // Récupérer le message de réponse
+    }
+}
