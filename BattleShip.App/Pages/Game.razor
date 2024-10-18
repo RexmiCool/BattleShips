@@ -289,7 +289,7 @@ else
                 gridSize = gridSize,
                 playerOne = userName,
                 multi = false,
-                playerOneBoatPositions = placedShips
+                playerOneBoatPositions = (placedShips.Keys.Count>0)?placedShips:null
             };
         var response = await Http.PostAsJsonAsync("game/new", request);
 
@@ -492,15 +492,17 @@ else
 
     private string GetBoatOrientation(int row, int col)
     {
+        // Vérification pour orientation verticale
         if (row + 1 < GameState.DefaultPlayerGrid.GetLength(0) && GameState.DefaultPlayerGrid[row, col] == GameState.DefaultPlayerGrid[row + 1, col])
         {
             return "vertical";
         }
-        else if(row - 1 < GameState.DefaultPlayerGrid.GetLength(0) && GameState.DefaultPlayerGrid[row, col] == GameState.DefaultPlayerGrid[row - 1, col]){
+        else if (row - 1 >= 0 && GameState.DefaultPlayerGrid[row, col] == GameState.DefaultPlayerGrid[row - 1, col])
+        {
             return "vertical";
         }
 
-        return "horizontal";  // Par défaut
+        return "horizontal";  // Par défaut si ce n'est pas vertical
     }
 
     private string GetBoatPartType(int row, int col)
