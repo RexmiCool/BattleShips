@@ -106,8 +106,13 @@
 
                 this.botProbabilityMap = new ProbabilityMap(size, this.battleShips);
             }
-            
 
+
+            //DEBUG
+            Console.WriteLine("PlayerGrid --------------------");
+            this.playerOneGrid.DisplayGrid();
+            Console.WriteLine("BotGrid --------------------");
+            this.botPlayerTwoGrid.DisplayGrid();
         }
 
         private void deployPlayerBattleShipsWithPositions(Grid grid, Dictionary<char, List<List<int>>> playerBoatPositions)

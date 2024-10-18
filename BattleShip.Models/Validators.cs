@@ -16,8 +16,8 @@ namespace BattleShip.Models
         public AttackRequestValidator()
         {
             RuleFor(x => x.gameId).GreaterThanOrEqualTo(0).WithMessage("L'ID de jeu doit être supérieur à 0.");
-            RuleFor(x => x.row).InclusiveBetween(0, 9).WithMessage("La ligne doit être entre 0 et 9.");
-            RuleFor(x => x.column).InclusiveBetween(0, 9).WithMessage("La colonne doit être entre 0 et 9.");
+            RuleFor(x => x.row).InclusiveBetween(0, 12).WithMessage("La ligne doit être entre 0 et 12.");
+            RuleFor(x => x.column).InclusiveBetween(0, 12).WithMessage("La colonne doit être entre 0 et 12.");
         }
     }
 
