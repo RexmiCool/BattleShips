@@ -26,7 +26,60 @@
             </select>
         </div>
 
-        <button class="start-button" @onclick="() => StartNewGame(selectedDifficulty, selectedGridSize)">
+        <div class="form-group">
+            <input type="checkbox" @bind="manualPlacement" /> Placer manuellement les navires
+        </div>
+
+        @if (manualPlacement)
+        {
+            <div class="form-group">
+                <label for="orientation">Orientation :</label>
+                <select class="styled-select" @bind="selectedOrientation">
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                </select>
+            </div>
+                
+            <div class="form-group">
+                <label for="shipSelect">Sélectionner un navire à placer :</label>
+                <select class="styled-select" @bind="selectedShip">
+                    @foreach (var ship in availableShips)
+                    {
+                        <option value="@ship.Key">@ship.Key (taille: @ship.Value)</option>
+                    }
+                </select>
+            </div>
+
+
+            <div class="grid-container">
+                <h4>Placez vos navires</h4>
+                <table>
+                    @for (int row = 0; row < selectedGridSize; row++)
+                    {
+                        <tr>
+                            @for (int col = 0; col < selectedGridSize; col++)
+                            {
+                                var currentRow = row;
+                                var currentCol = col;
+                                <td class="placement-cell @(GameState.PlayerGrid[currentRow, currentCol] != '\0' ? "ship" : "")"
+                                    @onclick="() => PlaceShipPart(currentRow, currentCol)">
+                                    @if (GameState.PlayerGrid[currentRow, currentCol] != '\0')
+                                    {
+                                        <span>@GameState.PlayerGrid[currentRow, currentCol]</span>
+                                    }
+                                    else
+                                    {
+                                        <span>~</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </table>
+            </div>
+        }
+
+        <button class="start-button" @onclick="() => StartNewGame(selectedDifficulty, selectedGridSize)" disabled="@(manualPlacement && placedShips.Count < 6)">
             Démarrer une nouvelle partie
         </button>
     </div>
@@ -151,14 +204,83 @@ else
 }
 
 @code {
-    private bool gameStarted = false;
-    private int selectedDifficulty = 1;
-    private int selectedGridSize = 10;
-
     [Parameter]
     [SupplyParameterFromQuery(Name = "userName")]
     public string userName { get; set; }
 
+
+    private bool gameStarted = false;
+    private int selectedDifficulty = 1;
+    private int selectedGridSize = 12;
+
+    private bool manualPlacement = false;
+    private string selectedOrientation = "horizontal";
+    // Grille de placement des navires
+    private int selectedShipSize = 3;
+    private Dictionary<char, int> availableShips = new Dictionary<char, int>()
+    {
+        { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 }
+    };
+    private char? selectedShip = null;
+    private Dictionary<char, List<List<int>>> placedShips = new();
+
+
+    protected override void OnParametersSet()
+    {
+        GameState.Initialize(selectedGridSize, selectedDifficulty);
+    }
+
+    // private void InitializePlayerShipGrid()
+    // {
+    //     Si la grille n'est pas initialisée ou si la taille a changé, la réinitialiser
+    //     if (GameState.PlayerGrid == null || GameState.PlayerGrid.GetLength(0) != selectedGridSize)
+    //     {
+    //         GameState.PlayerGrid = new char[selectedGridSize, selectedGridSize];
+    //     }
+    // }
+
+    private void PlaceShipPart(int row, int col)
+    {
+        if (selectedShip.HasValue && !placedShips.ContainsKey(selectedShip.Value))
+        {
+            var shipSize = availableShips[selectedShip.Value];
+            var coordinates = new List<List<int>>();
+            // Vérifier si le navire peut être placé sans sortir des limites et sans chevaucher
+            if (CanPlaceShip(row, col, shipSize, selectedOrientation))
+            {
+                // Placer le navire sur la grille
+                for (int i = 0; i < shipSize; i++)
+                {
+                    if (selectedOrientation == "horizontal") {
+                        GameState.PlayerGrid[row, col + i] = selectedShip.Value;
+                        coordinates.Add(new List<int> { row, col + i});
+                    }
+                    else
+                    {
+                        GameState.PlayerGrid[row + i, col] = selectedShip.Value;
+                        coordinates.Add(new List<int> { row + i, col });
+                    }
+                }
+                placedShips[selectedShip.Value] = coordinates;
+            }
+        }
+    }
+
+    private bool CanPlaceShip(int row, int col, int size, string orientation)
+    {
+        // Vérifier si le navire reste dans les limites et ne chevauche pas
+        for (int i = 0; i < size; i++)
+        {
+            if (orientation == "horizontal" && (col + i >= selectedGridSize || GameState.PlayerGrid[row, col + i] != '\0'))
+                return false;
+            if (orientation == "vertical" && (row + i >= selectedGridSize || GameState.PlayerGrid[row + i, col] != '\0'))
+                return false;
+        }
+        return true;
+    }
+
+
+    // Méthode pour démarrer une nouvelle partie
     private async Task StartNewGame(int difficulty, int gridSize)
     {
         var request = new RestartGameRequest
@@ -166,7 +288,8 @@ else
                 difficulty = difficulty,
                 gridSize = gridSize,
                 playerOne = userName,
-                multi = false
+                multi = false,
+                playerOneBoatPositions = placedShips
             };
         var response = await Http.PostAsJsonAsync("game/new", request);
 
@@ -178,10 +301,9 @@ else
             {
                 gameStarted = true;
 
-                GameState.Initialize(gridSize);
                 GameState.GameId = gameResponse.gameId;
 
-                // Initialiser la grille du joueur avec les bateaux
+                // Placement automatique des navires
                 foreach (var boat in gameResponse.boatLocations)
                 {
                     foreach (var part in boat.Value)
@@ -256,8 +378,10 @@ else
         var request = new RestartGameRequest
             {
                 gameId = GameState.GameId,
-                difficulty = selectedDifficulty,
-                gridSize = selectedGridSize
+                difficulty = GameState.Difficulty,
+                gridSize = GameState.GridSize,
+                multi = false, 
+                playerOne = userName
             };
 
         var response = await Http.PostAsJsonAsync("game/restart", request);

@@ -106,17 +106,6 @@ app.MapPost("/game/new", async (HttpContext httpContext, IValidator <RestartGame
         playerTwo = users["playerTwoUsername"];
     }
 
-    
-    if (playerOneBoatPositions == null)
-    {
-        playerOneBoatPositions = null;
-    }
-    
-    if (playerTwoBoatPositions == null)
-    {
-        playerTwoBoatPositions = null;
-    }
-
     // Créer un nouvel objet Game
     Game game = new Game(multi,
                         playerOne,
@@ -154,16 +143,6 @@ app.MapPost("/game/restart", async (HttpContext httpContext, IValidator<RestartG
     int gridSize = request.gridSize;
     Dictionary<char, List<List<int>>> playerOneBoatPositions = request.playerOneBoatPositions;
     Dictionary<char, List<List<int>>> playerTwoBoatPositions = request.playerTwoBoatPositions;
-    
-    if (playerOneBoatPositions == null)
-    {
-        playerOneBoatPositions = null;
-    }
-
-    if (playerTwoBoatPositions != null)
-    {
-        playerTwoBoatPositions = null;
-    }
 
     int playerOneScore = games[gameId].getScore(games[gameId].getPlayerOne().getUsername());
     int botPlayerTwoScore = 0;
