@@ -16,7 +16,7 @@
         public Dictionary<char, List<List<int>>>? playerTwoBoatPositions { get; set; }
     }
 
-        public class CreateUserRequest
+    public class CreateUserRequest
     {
         public string username { get; set; }
     }
