@@ -3,12 +3,15 @@
     public class Game
     {
         private int id;
+        private bool multi;
         private int size;
         private int difficulty;
+        private string turn;
+        private User playerOne;
+        private User playerTwo;
         private Dictionary<char, int> battleShips;
-        private Grid playerGrid;
-        private Grid botGrid;
-        private List<(int, int)> botAttacks;
+        private Grid playerOneGrid;
+        private Grid botPlayerTwoGrid;
         private List<Move> history;
         private ProbabilityMap botProbabilityMap;
         private PerimeterAttack perimeterAttack;
@@ -16,16 +19,25 @@
         private Dictionary<string, int> scoreBoard;
 
 
-        public Game(int difficulty = 2, int size = 10, Dictionary<char, int> battleShips = null, Dictionary<char, List<List<int>>>? playerBoatPositions = null, int playerScore = 0, int botScore = 0)
+        public Game(bool multi,
+                    User playerOne,
+                    User playerTwo = null,
+                    int difficulty = 2,
+                    int size = 10,
+                    Dictionary<char, int> battleShips = null,
+                    Dictionary<char, List<List<int>>>? playerOneBoatPositions = null,
+                    Dictionary<char, List<List<int>>>? playerTwoBoatPositions = null,
+                    int playerOneScore = 0,
+                    int botPlayerTwoScore = 0)
         {
+            this.multi = multi;
             this.size = size;
-            this.difficulty = difficulty;
-            this.playerGrid = new Grid(size, size);
-            this.botGrid = new Grid(size, size);
-            this.botAttacks = new List<(int, int)>();
+            this.playerOne = playerOne;
+            this.playerTwo = playerTwo;
+            this.playerOneGrid = new Grid(size, size);
+            this.botPlayerTwoGrid = new Grid(size, size);
             this.history = new List<Move>();
-            this.perimeterAttack = new PerimeterAttack(size);
-
+            this.turn = playerOne.getUsername();
             if (battleShips != null)
             {
                 this.battleShips = battleShips;
@@ -34,37 +46,67 @@
             {
                 this.battleShips = new Dictionary<char, int>() { { 'A', 1 }, { 'B', 2 }, { 'C', 2 }, { 'D', 3 }, { 'E', 3 }, { 'F', 4 } };
             }
-
-            destructionCounts = new Dictionary<string, Dictionary<char, int>>
+            if (playerOneBoatPositions != null)
             {
-                { "Player", new Dictionary<char, int>() },
-                { "Bot", new Dictionary<char, int>() }
-            };
-
-            this.scoreBoard = new Dictionary<string, int>
-            {
-                { "Player", playerScore },
-                { "Bot", botScore }
-            };
-
-            foreach (var ship in this.battleShips.Keys)
-            {
-                destructionCounts["Player"][ship] = 0;
-                destructionCounts["Bot"][ship] = 0;
-            }
-
-            if (playerBoatPositions != null)
-            {
-                deployPlayerBattleShipsWithPositions(this.playerGrid, playerBoatPositions);
+                deployPlayerBattleShipsWithPositions(this.playerOneGrid, playerOneBoatPositions);
             }
             else
             {
-                deployBattleShips(this.playerGrid);
+                deployBattleShips(this.playerOneGrid);
+            }
+            if (playerTwoBoatPositions != null)
+            {
+                deployPlayerBattleShipsWithPositions(this.botPlayerTwoGrid, playerTwoBoatPositions);
+            }
+            else
+            {
+                deployBattleShips(this.botPlayerTwoGrid);
             }
 
-            deployBattleShips(this.botGrid);
+            if(multi){
+                destructionCounts = new Dictionary<string, Dictionary<char, int>>
+                {
+                    { playerOne.getUsername(), new Dictionary<char, int>() },
+                    { playerTwo.getUsername(), new Dictionary<char, int>() }
+                };
+                this.scoreBoard = new Dictionary<string, int>
+                {
+                    { playerOne.getUsername(), playerOneScore },
+                    { playerTwo.getUsername(), botPlayerTwoScore }
+                };
+                foreach (var ship in this.battleShips.Keys)
+                {
+                    destructionCounts[playerOne.getUsername()][ship] = 0;
+                    destructionCounts[playerTwo.getUsername()][ship] = 0;
+                }
 
-            this.botProbabilityMap = new ProbabilityMap(size, this.battleShips);
+            }
+            else
+            {
+                this.difficulty = difficulty;
+                this.perimeterAttack = new PerimeterAttack(size);
+
+                destructionCounts = new Dictionary<string, Dictionary<char, int>>
+                {
+                    { playerOne.getUsername(), new Dictionary<char, int>() },
+                    { "Bot", new Dictionary<char, int>() }
+                };
+
+                this.scoreBoard = new Dictionary<string, int>
+                {
+                    { playerOne.getUsername(), playerOneScore },
+                    { "Bot", botPlayerTwoScore }
+                };
+
+                foreach (var ship in this.battleShips.Keys)
+                {
+                    destructionCounts[playerOne.getUsername()][ship] = 0;
+                    destructionCounts["Bot"][ship] = 0;
+                }
+
+                this.botProbabilityMap = new ProbabilityMap(size, this.battleShips);
+            }
+            
 
         }
 
@@ -108,6 +150,18 @@
 
         public int getDifficulty(){
             return this.difficulty;
+        }
+
+        public bool getMulti(){
+            return this.multi;
+        }
+
+        public User getPlayerOne(){
+            return this.playerOne;
+        }
+
+        public User getPlayerTwo(){
+            return this.playerTwo;
         }
 
         public int getScore(string player){
@@ -180,7 +234,7 @@
         {
             if (row >= 0 && row < this.size && column >= 0 && column < this.size)
             {
-                return this.playerGrid.GetCell(row, column) == '\0';
+                return this.playerOneGrid.GetCell(row, column) == '\0';
             }
             return false;
         }
@@ -205,9 +259,9 @@
             return true;
         }
 
-        public int[,] getPlayerGrid()
+        public int[,] getPlayerOneGrid()
         {
-            return this.playerGrid.GetGrid();
+            return this.playerOneGrid.GetGrid();
         }
         
         public Dictionary<char, List<List<int>>> getPlayerBoatLocation()
@@ -216,7 +270,7 @@
             Dictionary<char, List<List<int>>> boatLocations = new Dictionary<char, List<List<int>>>();
 
             // Obtenir la grille du joueur
-            int[,] grid = this.playerGrid.GetGrid();
+            int[,] grid = this.playerOneGrid.GetGrid();
 
             // Parcourir la grille
             for (int row = 0; row < this.size; row++)
@@ -256,16 +310,8 @@
         {
             int row, column;
 
-            // Générer des coordonnées jusqu'à trouver une position non attaquée
-            do
-            {
-                row = Random.Shared.Next(size);
-                column = Random.Shared.Next(size);
-            }
-            while (botAttacks.Contains((row, column))); // Vérifier si le coup a déjà été joué
-
-            // Ajouter les coordonnées à la liste des attaques effectuées
-            botAttacks.Add((row, column));
+            row = Random.Shared.Next(size);
+            column = Random.Shared.Next(size);
 
             return (row, column);
         }
@@ -276,27 +322,32 @@
             bool hit = false;
             char shipType = '\0';
 
-            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
+            while (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
+            {
+                (row, column) = EasyBotAttack();
+            }
+
+            if (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
             {
                 return 0;
             }
             else
             {
-                if (playerGrid.GetCell(row, column) != '\0')
+                if (playerOneGrid.GetCell(row, column) != '\0')
                 {
-                    shipType = (char)playerGrid.GetCell(row, column);
-                    playerGrid.UpdateCell(row, column, 'X');
+                    shipType = (char)playerOneGrid.GetCell(row, column);
+                    playerOneGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
                 else
                 {
-                    playerGrid.UpdateCell(row, column, 'O');
+                    playerOneGrid.UpdateCell(row, column, 'O');
                 }
 
                 // Enregistrer le coup du bot dans l'historique
                 history.Add(new Move("Bot", row, column, hit));
 
-                if (hit && IsShipSunk(playerGrid, shipType))
+                if (hit && IsShipSunk(playerOneGrid, shipType))
                 {
                     destructionCounts["Bot"][shipType]++;
                 }
@@ -326,9 +377,6 @@
         {
             // Utiliser l'attaque par périmètre pour déterminer la prochaine attaque
             var (row, column) = this.perimeterAttack.GetNextAttack();
-            
-            // Ajouter les coordonnées à la liste des attaques effectuées
-            botAttacks.Add((row, column));
 
             return (row, column);
         }
@@ -339,27 +387,27 @@
             bool hit = false;
             char shipType = '\0';
 
-            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
+            if (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
             {
                 return 0;
             }
             else
             {
-                if (playerGrid.GetCell(row, column) != '\0')
+                if (playerOneGrid.GetCell(row, column) != '\0')
                 {
-                    shipType = (char)playerGrid.GetCell(row, column);
-                    playerGrid.UpdateCell(row, column, 'X');
+                    shipType = (char)playerOneGrid.GetCell(row, column);
+                    playerOneGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
                 else
                 {
-                    playerGrid.UpdateCell(row, column, 'O');
+                    playerOneGrid.UpdateCell(row, column, 'O');
                 }
 
                 // Enregistrer le coup du bot dans l'historique
                 history.Add(new Move("Bot", row, column, hit));
 
-                if (hit && IsShipSunk(playerGrid, shipType))
+                if (hit && IsShipSunk(playerOneGrid, shipType))
                 {
                     destructionCounts["Bot"][shipType]++;
                 }
@@ -377,9 +425,6 @@
             // Utiliser la carte des probabilités pour trouver la prochaine attaque intelligente
             var (row, column) = this.botProbabilityMap.GetNextAttack();
             
-            // Ajouter les coordonnées à la liste des attaques effectuées
-            botAttacks.Add((row, column));
-
             return (row, column);
         }
 
@@ -389,28 +434,28 @@
             bool hit = false;
             char shipType = '\0';
 
-            if (playerGrid.GetCell(row, column) == 'X' || playerGrid.GetCell(row, column) == 'O')
+            if (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
             {
                 Console.WriteLine("BOT tape sur une case ou il a deja tape ==>BUG");
                 return 0;
             }
             else
             {
-                if (playerGrid.GetCell(row, column) != '\0')
+                if (playerOneGrid.GetCell(row, column) != '\0')
                 {
-                    shipType = (char)playerGrid.GetCell(row, column);
-                    playerGrid.UpdateCell(row, column, 'X');
+                    shipType = (char)playerOneGrid.GetCell(row, column);
+                    playerOneGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
                 else
                 {
-                    playerGrid.UpdateCell(row, column, 'O');
+                    playerOneGrid.UpdateCell(row, column, 'O');
                 }
 
                 // Enregistrer le coup du bot dans l'historique
                 history.Add(new Move("Bot", row, column, hit));
 
-                if (hit && IsShipSunk(playerGrid, shipType))
+                if (hit && IsShipSunk(playerOneGrid, shipType))
                 {
                     destructionCounts["Bot"][shipType]++;
                 }
@@ -432,27 +477,27 @@
             bool hit = false;
             char shipType = '\0';
 
-            if (botGrid.GetCell(row, column) == 'X' || botGrid.GetCell(row, column) == 'O')
+            if (botPlayerTwoGrid.GetCell(row, column) == 'X' || botPlayerTwoGrid.GetCell(row, column) == 'O')
             {
                 return 0;
             }
             else
             { 
-                if (botGrid.GetCell(row, column) != '\0')
+                if (botPlayerTwoGrid.GetCell(row, column) != '\0')
                 {
-                    shipType = (char)botGrid.GetCell(row, column);
-                    botGrid.UpdateCell(row, column, 'X');
+                    shipType = (char)botPlayerTwoGrid.GetCell(row, column);
+                    botPlayerTwoGrid.UpdateCell(row, column, 'X');
                     hit = true;
                 }
                 else
                 {
-                    botGrid.UpdateCell(row, column, 'O');
+                    botPlayerTwoGrid.UpdateCell(row, column, 'O');
                 }
 
                 // Enregistrer le coup dans l'historique
                 history.Add(new Move("Player", row, column, hit));
 
-                if (hit && IsShipSunk(botGrid, shipType))
+                if (hit && IsShipSunk(botPlayerTwoGrid, shipType))
                 {
                     destructionCounts["Player"][shipType]++;
                 }
@@ -492,13 +537,13 @@
                 if (lastMove.Player == "Player")
                 {
                     // Réinitialiser la case
-                    botGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du bot
+                    botPlayerTwoGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du bot
                     this.botProbabilityMap.RestoreShotMap(lastMove.Row, lastMove.Column, lastMove.Hit); // Restaurer la carte des probabilités
                 }
                 else if (lastMove.Player == "Bot")
                 {
                     // Réinitialiser la case
-                    playerGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du joueur
+                    playerOneGrid.UpdateCell(lastMove.Row, lastMove.Column, '\0'); // Réinitialiser la case dans la grille du joueur
                     this.botProbabilityMap.RestoreShotMap(lastMove.Row, lastMove.Column, lastMove.Hit); // Restaurer la carte des probabilités
                 }
 
@@ -509,12 +554,12 @@
         // Vérifier s'il y a un gagnant
         public int? CheckForWinner()
         {
-            if (IsAllShipsSunk(botGrid))
+            if (IsAllShipsSunk(botPlayerTwoGrid))
             {
                 this.scoreBoard["Player"]++;
                 return 1;
             }
-            if (IsAllShipsSunk(playerGrid))
+            if (IsAllShipsSunk(playerOneGrid))
             {                
                 this.scoreBoard["Bot"]++;
                 return 2;

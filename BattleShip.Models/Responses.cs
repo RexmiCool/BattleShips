@@ -11,4 +11,11 @@ namespace BattleShip.Models {
         Dictionary<string, Dictionary<char, int>> destroyedBoatsCount, 
         Dictionary<string, int> scoreBoard
     );
+
+    public record NewUserResponse(
+        int userId,
+        string username
+    );
+
+    
 }

@@ -29,7 +29,10 @@ namespace BattleShip.Models
             RuleFor(x => x.difficulty).InclusiveBetween(1, 3).WithMessage("La difficulté doit être entre 1 et 3.");
             RuleFor(x => x.gridSize).InclusiveBetween(8, 12).WithMessage("La taille de la grille doit être comprise entre 8 et 12.");
 
-            RuleForEach(x => x.playerBoatPositions)
+            RuleForEach(x => x.playerOneBoatPositions)
+                .Must(ValidateBoatPositions)
+                .WithMessage("Les positions des bateaux doivent être valides.");
+            RuleForEach(x => x.playerTwoBoatPositions)
                 .Must(ValidateBoatPositions)
                 .WithMessage("Les positions des bateaux doivent être valides.");
         }
