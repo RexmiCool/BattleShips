@@ -1,0 +1,51 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Créer un utilisateur</h3>
+
+<div class="user-container">
+    <div class="form-group">
+        <label for="username">Nom d'utilisateur :</label>
+        <input type="text" @bind="username" placeholder="Entrer un nom d'utilisateur" />
+    </div>
+
+    <button class="create-user-button" @onclick="CreateNewUser">
+        Créer utilisateur
+    </button>
+
+    @if (!string.IsNullOrEmpty(createUserMessage))
+    {
+        <div class="alert alert-info">@createUserMessage</div>
+    }
+</div>
+
+@code {
+    private string username;
+    private string createUserMessage;
+
+    private async Task CreateNewUser()
+    {
+        var request = new CreateUserRequest
+            {
+                username = username
+            };
+
+        var response = await Http.PostAsJsonAsync("/user/new", request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var userResponse = await response.Content.ReadFromJsonAsync<NewUserResponse>();
+
+            if (userResponse != null)
+            {
+                createUserMessage = $"Utilisateur créé avec succès : ID = {userResponse.userId}, Nom = {userResponse.username}";
+                Navigation.NavigateTo($"/game?userName={userResponse.username}");
+            }
+        }
+        else
+        {
+            createUserMessage = "Erreur lors de la création de l'utilisateur.";
+        }
+    }
+}
