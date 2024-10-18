@@ -273,7 +273,7 @@ app.MapPost("/game/undo", async (HttpContext httpContext, IValidator<UndoRequest
 .WithName("UndoMoves")
 .WithOpenApi();
 
-app.MapGet("/game/laederboard", () =>
+app.MapGet("/game/leaderboard", () =>
 {
     return Results.Ok(leaderBoard);
 })

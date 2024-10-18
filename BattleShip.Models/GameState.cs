@@ -16,10 +16,16 @@
 
         public int GridSize { get; private set; }  // Taille de la grille choisie
 
+        public int Difficulty { get; set; }
+
         public bool? GameFinished { get; set; }
 
         public GameState()
         {
+            GridSize = 12;
+            Difficulty = 2;
+            PlayerGrid = new char[GridSize, GridSize];
+            OpponentGrid = new bool?[GridSize, GridSize];
             Message = "";
             GameId = 0;
             GameFinished = false;
@@ -39,9 +45,10 @@
         }
 
         // Méthode pour définir la taille de la grille
-        public void Initialize(int gridSize)
+        public void Initialize(int gridSize, int difficulty)
         {
             GridSize = gridSize;
+            Difficulty= difficulty;
             PlayerGrid = new char[GridSize, GridSize];
             OpponentGrid = new bool?[GridSize, GridSize];
             Message = "";
@@ -50,9 +57,9 @@
         }
 
         // Méthode pour réinitialiser l'état du jeu selon la nouvelle taille
-        public void ResetGame(int gridSize)
+        public void ResetGame(int gridSize, int difficulty)
         {
-            Initialize(gridSize);  // Réutiliser la méthode d'initialisation
+            Initialize(gridSize, difficulty);  // Réutiliser la méthode d'initialisation
         }
 
         // Méthode pour afficher les grilles (pour le debug)
