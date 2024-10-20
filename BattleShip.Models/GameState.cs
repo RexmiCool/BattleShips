@@ -23,6 +23,8 @@
 
         public Dictionary<char, List<List<int>>> boatLocations { get; set; }
 
+        public Dictionary<string, int> leaderboard {  get; set; }
+
         public GameState()
         {
             GridSize = 12;

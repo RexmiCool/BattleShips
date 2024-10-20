@@ -148,9 +148,9 @@ namespace BattleShip.Models
         public void displayProbMap(){
             Console.WriteLine("-----------------------------------------");
             Console.WriteLine("ProbMap");
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < this.size; i++)
             {
-                for (int j = 0; j < 10; j++)
+                for (int j = 0; j < this.size; j++)
                 {
                     Console.Write(this.probMap[i, j] + " ");
                 }
@@ -162,9 +162,9 @@ namespace BattleShip.Models
         public void displayShotMap(){
             Console.WriteLine("-----------------------------------------");
             Console.WriteLine("ShotMap");
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < this.size; i++)
             {
-                for (int j = 0; j < 10; j++)
+                for (int j = 0; j < this.size; j++)
                 {
                     Console.Write(this.shotMap[i, j] + " ");
                 }

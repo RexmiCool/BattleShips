@@ -1,5 +1,6 @@
 ﻿.undo-button {
     margin-top: 10px;
+    margin-bottom: 10px;
     padding: 8px 16px;
     background-color: #ffcc00;
     color: black;
@@ -16,6 +17,7 @@
 
 .history-container {
     height: 500px;
+    width : 250px;
     border: 1px solid #ccc;
     padding: 10px;
     margin: 20px;

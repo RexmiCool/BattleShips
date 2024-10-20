@@ -83,7 +83,37 @@
 else
 {
     <button class="restart-button" @onclick="RestartGame">Redémarrer la partie</button>
+    @if (!string.IsNullOrEmpty(GameState.Message))
+    {
+        <div class="alert alert-success">@GameState.Message</div>
+    }
+
     <div class="board-container">
+
+        <div>
+            <h3>Leaderboard</h3>
+
+            @if (GameState.leaderboard != null)
+            {
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Joueur</th>
+                            <th>Parties Gagnées</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in GameState.leaderboard)
+                        {
+                            <tr>
+                                <td>@entry.Key</td>
+                                <td>@entry.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
 
         <div class="grid-container">
             <h4>Grille du Joueur</h4>
@@ -161,7 +191,7 @@ else
                         {
                             var currentRow = row;
                             var currentCol = col;
-                            <td class="@(GameState.OpponentGrid[currentRow, currentCol] == true ? "hit" : GameState.OpponentGrid[currentRow, currentCol] == false ? "miss" : "")">
+                            <td class="@(GameState.OpponentGrid[currentRow, currentCol] == true ? "hit" : "")">
                                 @if (GameState.OpponentGrid[currentRow, currentCol] == true)
                                 {
                                     <img src="images/hit.png" alt="Touché" />
@@ -182,11 +212,6 @@ else
         </div>
     </div>
 
-    @if (!string.IsNullOrEmpty(GameState.Message))
-    {
-        <div class="alert alert-success">@GameState.Message</div>
-    }
-
     @if (GameState.GameFinished == true)
     {
         <div class="overlay">
@@ -206,8 +231,8 @@ else
 
 
     private bool gameStarted = false;
-    private int selectedDifficulty = 1;
-    private int selectedGridSize = 12;
+    private int selectedDifficulty;
+    private int selectedGridSize;
 
     private bool manualPlacement = false;
     private string selectedOrientation = "horizontal";
@@ -301,8 +326,10 @@ else
 
                 GameState.boatLocations = gameResponse.boatLocations;
 
+                GameState.Initialize(selectedGridSize, selectedDifficulty);
+
                 // Placement automatique des navires
-                foreach (var boat in gameResponse.boatLocations)
+                foreach (var boat in GameState.boatLocations)
                 {
                     foreach (var part in boat.Value)
                     {
@@ -355,10 +382,13 @@ else
 
             // Mettez à jour la grille du joueur avec les résultats de l'attaque IA
             var botCoordinates = attackResponse.botAttackCoordinates;
-            GameState.PlayerGrid[botCoordinates.row, botCoordinates.column] = attackResponse.botAttack == 1 ? 'X' : 'O';
+            if (botCoordinates.row >= 0 && botCoordinates.column >= 0 && botCoordinates.row < GameState.GridSize && botCoordinates.column < GameState.GridSize)
+            {
+                GameState.PlayerGrid[botCoordinates.row, botCoordinates.column] = attackResponse.botAttack == 1 ? 'X' : 'O';
+            }
             await LoadHistory();
 
-            if (attackResponse.winner.HasValue && attackResponse.winner.Value == 0)
+            if (attackResponse.winner.HasValue && attackResponse.winner.Value == 2 )
             {
                 GameState.Message = "Vous avez perdu...";
                 GameState.GameFinished = true;
@@ -394,6 +424,7 @@ else
                 GameState.GameFinished = false;
                 GameState.boatLocations = gameResponse.boatLocations;
                 await LoadHistory();
+                await LoadLeaderboard();
 
                 // Réinitialiser la grille du joueur
                 for (int row = 0; row < GameState.PlayerGrid.GetLength(0); row++)
@@ -568,5 +599,19 @@ else
     }
 
 
+    private async Task LoadLeaderboard()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<Dictionary<string, int>>("/game/leaderboard");
+            GameState.leaderboard = response ?? new Dictionary<string, int>();
 
+            // Forcer la mise à jour de l'interface
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement du leaderboard : {ex.Message}");
+        }
+    }
 }

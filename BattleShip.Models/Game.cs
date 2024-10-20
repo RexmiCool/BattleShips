@@ -274,10 +274,8 @@
             // Initialiser un dictionnaire pour stocker les positions des bateaux
             Dictionary<char, List<List<int>>> boatLocations = new Dictionary<char, List<List<int>>>();
 
-            // Obtenir la grille du joueur
             int[,] grid = this.playerOneGrid.GetGrid();
 
-            // Parcourir la grille
             for (int row = 0; row < this.size; row++)
             {
                 for (int col = 0; col < this.size; col++)

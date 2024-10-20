@@ -39,8 +39,8 @@
     justify-content: space-between;
     margin-top: 20px;
     padding: 20px;
-    padding-left: 15%;
-    padding-right: 15%;
+    padding-left: 10%;
+    padding-right: 10%;
     background-color: #e6e6e6;
     border-radius: 8px;
 }
@@ -78,11 +78,7 @@ td {
 
 
 .hit {
-    background-color: orange;
-}
-
-.miss {
-    background-color: darkblue;
+    background-color: gray;
 }
 
 .invisible-button {
