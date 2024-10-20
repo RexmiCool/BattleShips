@@ -67,10 +67,6 @@
                                     {
                                         <span>@GameState.PlayerGrid[currentRow, currentCol]</span>
                                     }
-                                    else
-                                    {
-                                        <span>~</span>
-                                    }
                                 </td>
                             }
                         </tr>
@@ -115,9 +111,6 @@ else
                                 else @if (GameState.PlayerGrid[row, col] != '\0')
                                 {
                                     <span>@GameState.PlayerGrid[row, col]</span>
-                                } else
-                                {
-                                    <span>~</span>
                                 }
                             </td>
                         }
@@ -295,6 +288,8 @@ else
 
                 GameState.GameId = gameResponse.gameId;
 
+                GameState.boatLocations = gameResponse.boatLocations;
+
                 // Placement automatique des navires
                 foreach (var boat in gameResponse.boatLocations)
                 {
@@ -385,6 +380,7 @@ else
             {
                 GameState.GameId = gameResponse.gameId;
                 GameState.GameFinished = false;
+                GameState.boatLocations = gameResponse.boatLocations;
                 await LoadHistory();
 
                 // Réinitialiser la grille du joueur
@@ -452,14 +448,46 @@ else
         {
             if (history != null && history.Count > 0)
             {
-                var undoRequest = new UndoRequest(GameState.GameId, 2);
+                var undoRequest = new UndoRequest(GameState.GameId, 1);
 
                 var response = await Http.PostAsJsonAsync("/game/undo", undoRequest);
+
+                var moves = await response.Content.ReadFromJsonAsync<List<Move>>();
 
                 if (response.IsSuccessStatusCode)
                 {
                     // Si succès, recharge l'historique et mets à jour les grilles
                     await LoadHistory();
+                    foreach (var move in moves)
+                    {
+                        if (move.Player != userName)
+                        {
+                            if (move.Hit)
+                            {
+                                foreach (var boat in GameState.boatLocations)
+                                {
+                                    foreach (var part in boat.Value)
+                                    {
+                                        int row = part[0];
+                                        int col = part[1];
+                                        if(row == move.Row && col == move.Column)
+                                        {
+                                            GameState.PlayerGrid[move.Row, move.Column] = boat.Key;
+                                            continue;
+                                        }
+                                    }
+                                }
+                            } else
+                            {
+                                GameState.PlayerGrid[move.Row, move.Column] = '\0';
+                            }
+                        }
+                        else
+                        {
+                            GameState.OpponentGrid[move.Row, move.Column] = null;
+                        }
+                    }
+                    StateHasChanged();
                     GameState.Message = "Dernier coup annulé avec succès.";
                 }
                 else

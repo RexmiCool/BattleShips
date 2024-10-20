@@ -20,6 +20,8 @@
 
         public bool? GameFinished { get; set; }
 
+        public Dictionary<char, List<List<int>>> boatLocations { get; set; }
+
         public GameState()
         {
             GridSize = 12;
