@@ -318,6 +318,11 @@
             row = Random.Shared.Next(size);
             column = Random.Shared.Next(size);
 
+            while (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
+            {
+                (row, column) = (Random.Shared.Next(size), Random.Shared.Next(size));
+            }
+
             return (row, column);
         }
 
@@ -326,11 +331,6 @@
         {
             bool hit = false;
             char shipType = '\0';
-
-            while (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
-            {
-                (row, column) = EasyBotAttack();
-            }
 
             if (playerOneGrid.GetCell(row, column) == 'X' || playerOneGrid.GetCell(row, column) == 'O')
             {

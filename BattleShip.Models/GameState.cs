@@ -6,6 +6,7 @@
 
         // Grille du joueur (contient les lettres des bateaux)
         public char[,] PlayerGrid { get; private set; }
+        public char[,] DefaultPlayerGrid { get; private set; }
 
         // Grille de l'adversaire (null = jamais tiré, true = touché, false = raté)
         public bool?[,] OpponentGrid { get; private set; }
@@ -52,6 +53,7 @@
             GridSize = gridSize;
             Difficulty= difficulty;
             PlayerGrid = new char[GridSize, GridSize];
+            DefaultPlayerGrid = new char[GridSize, GridSize];
             OpponentGrid = new bool?[GridSize, GridSize];
             Message = "";
             GameId = 0;
