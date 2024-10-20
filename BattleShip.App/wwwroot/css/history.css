@@ -17,7 +17,7 @@
 
 .history-container {
     height: 500px;
-    width : 250px;
+    min-width : 300px;
     border: 1px solid #ccc;
     padding: 10px;
     margin: 20px;

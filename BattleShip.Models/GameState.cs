@@ -5,7 +5,7 @@
         private static GameState? _instance;
 
         // Grille du joueur (contient les lettres des bateaux)
-        public char[,] PlayerGrid { get; private set; }
+        public char[,] PlayerGrid { get; set; }
         public char[,] DefaultPlayerGrid { get; private set; }
 
         // Grille de l'adversaire (null = jamais tiré, true = touché, false = raté)

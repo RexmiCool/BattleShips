@@ -39,7 +39,7 @@
                     <option value="vertical">Vertical</option>
                 </select>
             </div>
-                
+
             <div class="form-group">
                 <label for="shipSelect">Sélectionner un navire à placer :</label>
                 <select class="styled-select" @bind="selectedShip">
@@ -49,7 +49,6 @@
                     }
                 </select>
             </div>
-
 
             <div class="grid-container">
                 <h4>Placez vos navires</h4>
@@ -90,7 +89,7 @@ else
 
     <div class="board-container">
 
-        <div>
+        <div class="history-container">
             <h3>Leaderboard</h3>
 
             @if (GameState.leaderboard != null)
@@ -231,8 +230,8 @@ else
 
 
     private bool gameStarted = false;
-    private int selectedDifficulty;
-    private int selectedGridSize;
+    private int selectedDifficulty = 2;
+    private int selectedGridSize = 10;
 
     private bool manualPlacement = false;
     private string selectedOrientation = "horizontal";
@@ -248,17 +247,16 @@ else
 
     protected override void OnParametersSet()
     {
-        GameState.Initialize(selectedGridSize, selectedDifficulty);
+        InitializePlayerShipGrid();
     }
 
-    // private void InitializePlayerShipGrid()
-    // {
-    //     Si la grille n'est pas initialisée ou si la taille a changé, la réinitialiser
-    //     if (GameState.PlayerGrid == null || GameState.PlayerGrid.GetLength(0) != selectedGridSize)
-    //     {
-    //         GameState.PlayerGrid = new char[selectedGridSize, selectedGridSize];
-    //     }
-    // }
+    private void InitializePlayerShipGrid()
+    {
+        if (GameState.PlayerGrid == null || GameState.PlayerGrid.GetLength(0) != selectedGridSize)
+        {
+            GameState.PlayerGrid = new char[selectedGridSize, selectedGridSize];
+        }
+    }
 
     private void PlaceShipPart(int row, int col)
     {
